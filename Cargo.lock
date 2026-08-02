@@ -1033,6 +1033,7 @@ dependencies = [
  "buzz-media",
  "clap",
  "deadpool-redis",
+ "hex",
  "redis",
  "serde",
  "serde_json",
