@@ -8,15 +8,19 @@ export type SentFromThreadReference = {
 
 export function summarizeThreadRoot(content: string): string | null {
   const normalized = content
+    .replace(/\|\|[^|]*(?:\|(?!\|)[^|]*)*\|\|/g, " ")
     .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
     .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
     .replace(/<?https?:\/\/\S+>?/g, " ")
     .replace(/[`*_~>#|]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+  const characters = Array.from(normalized);
   if (!normalized) return null;
-  if (normalized.length <= THREAD_ROOT_EXCERPT_MAX_LENGTH) return normalized;
-  const clipped = normalized.slice(0, THREAD_ROOT_EXCERPT_MAX_LENGTH - 1);
+  if (characters.length <= THREAD_ROOT_EXCERPT_MAX_LENGTH) return normalized;
+  const clipped = characters
+    .slice(0, THREAD_ROOT_EXCERPT_MAX_LENGTH - 1)
+    .join("");
   const lastSpace = clipped.lastIndexOf(" ");
   const excerpt = lastSpace > 32 ? clipped.slice(0, lastSpace) : clipped;
   return `${excerpt.trimEnd()}…`;

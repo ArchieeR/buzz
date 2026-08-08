@@ -39,6 +39,43 @@ test("send-to-channel preserves supported message semantics", () => {
   );
 });
 
+test("edited messages recompute effective mention recipients from the body", () => {
+  const ADDED = "d".repeat(64);
+  const profiles = {
+    [MENTION]: { displayName: "Alice" },
+    [ADDED]: { displayName: "Bob" },
+  };
+
+  assert.deepEqual(
+    getSendToChannelSemantics(
+      {
+        body: "Now pinging @Bob",
+        edited: true,
+        pubkey: SOURCE,
+        tags: [
+          ["p", MENTION],
+          ["p", ADDED],
+        ],
+      },
+      profiles,
+    ),
+    { mentionPubkeys: [ADDED], semanticTags: [] },
+  );
+});
+
+test("send-to-channel canonicalizes suppressed link previews", () => {
+  const snapshot = ["link-preview", "https://example.com", "snapshot"];
+  const suppression = ["link-preview", "none"];
+
+  assert.deepEqual(
+    getSendToChannelSemantics({
+      pubkey: SOURCE,
+      tags: [snapshot, suppression],
+    }),
+    { mentionPubkeys: [], semanticTags: [suppression] },
+  );
+});
+
 test("send-to-channel handles messages without semantic tags", () => {
   assert.deepEqual(
     getSendToChannelSemantics({ pubkey: SOURCE, tags: undefined }),

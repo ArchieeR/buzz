@@ -31,6 +31,16 @@ test("send-to-channel permits messages from an agent owned by the viewer", () =>
   );
 });
 
+test("send-to-channel rejects specialized message kinds", () => {
+  const diffMessage = { ...message(CURRENT), kind: 40008 };
+
+  assert.equal(canSendMessageToChannel(diffMessage, CURRENT, profiles), false);
+  assert.throws(
+    () => assertCanSendMessageToChannel(diffMessage, CURRENT, profiles),
+    /Only ordinary channel messages/,
+  );
+});
+
 test("send-to-channel rejects pending messages", () => {
   const pendingMessage = { ...message(CURRENT), pending: true };
 

@@ -975,7 +975,7 @@ export const MessageRow = React.memo(
       next.onCollapseDescendantsHoverChange &&
     prev.onEntranceComplete === next.onEntranceComplete &&
     prev.playEntrance === next.playEntrance &&
-    Boolean(prev.onSendToChannel) === Boolean(next.onSendToChannel) &&
+    prev.onSendToChannel === next.onSendToChannel &&
     prev.profiles === next.profiles &&
     prev.searchQuery === next.searchQuery &&
     prev.videoReviewCommentRootId === next.videoReviewCommentRootId &&

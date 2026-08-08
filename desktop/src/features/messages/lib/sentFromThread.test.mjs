@@ -67,3 +67,12 @@ test("summarizeThreadRoot keeps concise text and ignores media-only roots", () =
   );
   assert.match(summarizeThreadRoot("word ".repeat(30)) ?? "", /…$/);
 });
+
+test("summarizeThreadRoot preserves Unicode boundaries and redacts spoilers", () => {
+  const summary = summarizeThreadRoot(`${"a".repeat(62)}😀 more`);
+  assert.equal(summary, `${"a".repeat(62)}😀…`);
+  assert.equal(
+    summarizeThreadRoot("Public ||confidential details|| update"),
+    "Public update",
+  );
+});

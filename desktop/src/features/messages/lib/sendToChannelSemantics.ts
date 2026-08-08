@@ -1,5 +1,8 @@
 import type { TimelineMessage } from "@/features/messages/types";
+import { orderMentionPubkeysByText } from "@/features/messages/lib/orderMentionPubkeys";
+import type { UserProfileLookup } from "@/features/profile/lib/identity";
 import { normalizePubkey } from "@/shared/lib/pubkey";
+import { resolveMentionProps } from "@/shared/lib/resolveMentionNames";
 
 const PUBKEY_PATTERN = /^[0-9a-f]{64}$/;
 const SHAREABLE_TAG_KINDS = new Set([
@@ -20,6 +23,7 @@ export type SendToChannelSemantics = {
  */
 export function getSendToChannelSemantics(
   message: TimelineMessage,
+  profiles?: UserProfileLookup,
 ): SendToChannelSemantics {
   const sourceAuthors = new Set(
     [message.pubkey, message.signerPubkey]
@@ -28,7 +32,19 @@ export function getSendToChannelSemantics(
   );
   const seenMentions = new Set<string>();
   const mentionPubkeys: string[] = [];
+  const effectiveMentionPubkeys = message.edited
+    ? new Set(
+        orderMentionPubkeysByText(
+          message.body,
+          resolveMentionProps(message.tags, profiles).mentionPubkeysByName,
+          () => true,
+        ),
+      )
+    : null;
   const semanticTags: string[][] = [];
+  const hasPreviewSuppression = message.tags?.some(
+    (tag) => tag.length === 2 && tag[0] === "link-preview" && tag[1] === "none",
+  );
 
   for (const tag of message.tags ?? []) {
     if (tag[0] === "p") {
@@ -36,6 +52,8 @@ export function getSendToChannelSemantics(
       if (
         PUBKEY_PATTERN.test(pubkey) &&
         !sourceAuthors.has(pubkey) &&
+        (effectiveMentionPubkeys === null ||
+          effectiveMentionPubkeys.has(pubkey)) &&
         !seenMentions.has(pubkey)
       ) {
         seenMentions.add(pubkey);
@@ -45,6 +63,13 @@ export function getSendToChannelSemantics(
     }
 
     if (SHAREABLE_TAG_KINDS.has(tag[0] ?? "")) {
+      if (
+        tag[0] === "link-preview" &&
+        hasPreviewSuppression &&
+        !(tag.length === 2 && tag[1] === "none")
+      ) {
+        continue;
+      }
       semanticTags.push([...tag]);
     }
   }

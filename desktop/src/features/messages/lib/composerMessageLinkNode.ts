@@ -9,7 +9,7 @@ import {
   getMessageLinkLabel,
   MESSAGE_LINK_PREFIX,
 } from "./messageLinkLabel";
-import { parseMessageLink } from "./messageLink";
+import { buildMessageLink, parseMessageLink } from "./messageLink";
 
 export const COMPOSER_MESSAGE_LINK_NODE_NAME = "composerMessageLink";
 
@@ -22,7 +22,7 @@ export type ComposerMessageLinkAttributes = {
   href: string;
 };
 
-const BARE_MESSAGE_LINK_AT_START = /^(?:buzz):\/\/message\?[^\s<>"')\]]+/i;
+const BARE_MESSAGE_LINK_AT_START = /^(?:buzz):\/\/message\?[^\s<>"')\]}*_]+/i;
 const TRAILING_PUNCTUATION = /[.,;:!?]+$/;
 
 function trimBareMessageLink(value: string): string {
@@ -44,7 +44,11 @@ export function resolveComposerMessageLinkAttributes(
   if (!parsed.ok) return null;
   return {
     channelName: resolveChannelName(parsed.value.channelId) ?? "",
-    href,
+    href: buildMessageLink({
+      channelId: parsed.value.channelId,
+      messageId: parsed.value.messageId,
+      threadRootId: parsed.value.threadRootId,
+    }),
   };
 }
 
@@ -117,23 +121,30 @@ export function registerComposerMessageLinkMarkdownIt(
 
   // biome-ignore lint/suspicious/noExplicitAny: markdown-it state/silent
   const rule = (state: any, silent: boolean): boolean => {
-    const match = BARE_MESSAGE_LINK_AT_START.exec(state.src.slice(state.pos));
-    if (!match) return false;
-    const href = trimBareMessageLink(match[0]);
+    const remaining = state.src.slice(state.pos);
+    const fullMatch = BARE_MESSAGE_LINK_AT_START.exec(remaining);
+    const suffixMatch = /^:\/\/message\?[^\s<>"')\]}*_]+/i.exec(remaining);
+    const resumesTextToken =
+      !fullMatch && suffixMatch && /buzz$/i.test(state.pending ?? "");
+    const rawHref =
+      fullMatch?.[0] ?? (resumesTextToken ? `buzz${suffixMatch[0]}` : null);
+    if (!rawHref) return false;
+    const href = trimBareMessageLink(rawHref);
     const attrs = resolveComposerMessageLinkAttributes(
       href,
       options.resolveChannelName,
     );
     if (!attrs) return false;
     if (!silent) {
+      if (resumesTextToken) state.pending = state.pending.slice(0, -4);
       const token = state.push(tokenType, "span", 0);
       token.meta = attrs;
     }
-    state.pos += href.length;
+    state.pos += href.length - (resumesTextToken ? 4 : 0);
     return true;
   };
 
-  md.inline.ruler.before("autolink", ruleName, rule);
+  md.inline.ruler.before("text", ruleName, rule);
   // biome-ignore lint/suspicious/noExplicitAny: markdown-it token
   md.renderer.rules[tokenType] = (tokens: any[], index: number): string => {
     const attrs = tokens[index].meta as ComposerMessageLinkAttributes;

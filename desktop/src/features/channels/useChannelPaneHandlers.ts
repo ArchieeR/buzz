@@ -10,6 +10,7 @@ import { resolveThreadReplyTarget } from "@/features/messages/hooks";
 import { getSendToChannelSemantics } from "@/features/messages/lib/sendToChannelSemantics";
 import { summarizeThreadRoot } from "@/features/messages/lib/sentFromThread";
 import type { TimelineMessage } from "@/features/messages/types";
+import type { UserProfileLookup } from "@/features/profile/lib/identity";
 
 /**
  * Stable callback references for ChannelPane so that keystroke-driven
@@ -27,6 +28,7 @@ export function useChannelPaneHandlers({
   getFirstReplyIdForMessage,
   getReplyDescendantIdsForMessage,
   markRevealedRepliesRead,
+  profiles,
   recordThreadInteraction,
   onOptimisticOpenThreadHeadIdChange,
   onRequestEmptyEditDelete,
@@ -47,6 +49,7 @@ export function useChannelPaneHandlers({
   getFirstReplyIdForMessage: (messageId: string) => string | null;
   getReplyDescendantIdsForMessage: (messageId: string) => string[];
   markRevealedRepliesRead: (messageId: string) => void;
+  profiles: UserProfileLookup | undefined;
   recordThreadInteraction: (rootId: string) => void;
   onOptimisticOpenThreadHeadIdChange: React.Dispatch<
     React.SetStateAction<string | null | undefined>
@@ -74,6 +77,9 @@ export function useChannelPaneHandlers({
 
   const expandedThreadReplyIdsRef = React.useRef(expandedThreadReplyIds);
   expandedThreadReplyIdsRef.current = expandedThreadReplyIds;
+
+  const profilesRef = React.useRef(profiles);
+  profilesRef.current = profiles;
 
   const sendMutateRef = React.useRef(sendMessageMutation.mutateAsync);
   sendMutateRef.current = sendMessageMutation.mutateAsync;
@@ -295,8 +301,10 @@ export function useChannelPaneHandlers({
       threadRoot: TimelineMessage,
       channelId: string,
     ) => {
-      const { mentionPubkeys, semanticTags } =
-        getSendToChannelSemantics(message);
+      const { mentionPubkeys, semanticTags } = getSendToChannelSemantics(
+        message,
+        profilesRef.current,
+      );
       await sendMutateRef.current({
         channelId,
         content: message.body,

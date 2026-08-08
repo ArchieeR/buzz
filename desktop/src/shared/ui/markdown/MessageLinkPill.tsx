@@ -13,9 +13,10 @@ import {
   MESSAGE_LINK_PREFIX,
 } from "@/features/messages/lib/messageLinkLabel";
 
-const graphemeSegmenter = new Intl.Segmenter(undefined, {
-  granularity: "grapheme",
-});
+const graphemeSegmenter =
+  typeof Intl.Segmenter === "function"
+    ? new Intl.Segmenter(undefined, { granularity: "grapheme" })
+    : null;
 const emojiGraphemePattern =
   /(?:\p{Extended_Pictographic}|\p{Regional_Indicator}|[\uFE0F\u20E3])/u;
 
@@ -25,13 +26,19 @@ function segmentLinkLabel(label: string): Array<{
   text: string;
 }> {
   const segments: Array<{ isEmoji: boolean; start: number; text: string }> = [];
-  for (const { index: start, segment } of graphemeSegmenter.segment(label)) {
-    const isEmoji = emojiGraphemePattern.test(segment);
+  const graphemes = graphemeSegmenter
+    ? Array.from(graphemeSegmenter.segment(label), ({ index, segment }) => ({
+        start: index,
+        text: segment,
+      }))
+    : Array.from(label, (text, start) => ({ start, text }));
+  for (const { start, text } of graphemes) {
+    const isEmoji = emojiGraphemePattern.test(text);
     const previous = segments.at(-1);
     if (previous?.isEmoji === isEmoji) {
-      previous.text += segment;
+      previous.text += text;
     } else {
-      segments.push({ isEmoji, start, text: segment });
+      segments.push({ isEmoji, start, text });
     }
   }
   return segments;

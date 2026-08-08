@@ -759,7 +759,7 @@ export function useEditMessageMutation(channel: Channel | null) {
         mentionPubkeys,
       );
     },
-    onSuccess: (_data, { eventId, content, mediaTags }) => {
+    onSuccess: (_data, { eventId, content, mediaTags, mentionPubkeys }) => {
       if (!channel) {
         return;
       }
@@ -772,9 +772,14 @@ export function useEditMessageMutation(channel: Channel | null) {
       // only because the edit event round-trip can lag perceptibly.)
       const applyEdit = (message: RelayEvent): RelayEvent => {
         if (message.id !== eventId) return message;
-        const nextTags = mediaTags
-          ? applyEditTagOverlay(message.tags, mediaTags)
-          : message.tags;
+        const editTags = [
+          ...(mediaTags ?? []),
+          ...(mentionPubkeys ?? []).map((pubkey) => ["p", pubkey]),
+        ];
+        const nextTags =
+          mediaTags !== undefined || editTags.length > 0
+            ? applyEditTagOverlay(message.tags, editTags)
+            : message.tags;
         return { ...message, content, tags: nextTags };
       };
 
