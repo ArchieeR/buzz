@@ -4,7 +4,11 @@ import { TextSelection } from "@tiptap/pm/state";
 import type { EditorView } from "@tiptap/pm/view";
 
 import { MENTION_CHIP_BASE_CLASSES } from "@/shared/ui/mentionChip";
-import { getMessageLinkLabel } from "./messageLinkLabel";
+import {
+  getMessageLinkChannelLabel,
+  getMessageLinkLabel,
+  MESSAGE_LINK_PREFIX,
+} from "./messageLinkLabel";
 import { parseMessageLink } from "./messageLink";
 
 export const COMPOSER_MESSAGE_LINK_NODE_NAME = "composerMessageLink";
@@ -179,18 +183,28 @@ export const ComposerMessageLinkNode =
           (String(node.attrs.channelName ?? "") || "channel"))
         : "channel";
       const label = getMessageLinkLabel({ channelName });
+      const channelLinkLabel = getMessageLinkChannelLabel(channelName);
       return [
         "span",
         mergeAttributes(HTMLAttributes, {
           "aria-label": label,
-          class: MENTION_CHIP_BASE_CLASSES,
+          class:
+            "inline-flex min-w-0 max-w-80 items-center gap-1.5 align-baseline",
           "data-channel-name": channelName,
           "data-composer-message-link": "",
           "data-href": href,
           "data-message-link": "",
           title: label,
         }),
-        label,
+        ["span", { class: "shrink-0" }, MESSAGE_LINK_PREFIX],
+        [
+          "span",
+          {
+            class: `${MENTION_CHIP_BASE_CLASSES} min-w-0 max-w-full truncate`,
+            "data-channel-link": "",
+          },
+          channelLinkLabel,
+        ],
       ];
     },
 

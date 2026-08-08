@@ -5,7 +5,11 @@ import {
 } from "@/shared/ui/mentionChip";
 
 import type { MessageLinkPillProps } from "./types";
-import { getMessageLinkLabel } from "@/features/messages/lib/messageLinkLabel";
+import {
+  getMessageLinkChannelLabel,
+  getMessageLinkLabel,
+  MESSAGE_LINK_PREFIX,
+} from "@/features/messages/lib/messageLinkLabel";
 
 export function MessageLinkPill({
   channels,
@@ -23,11 +27,58 @@ export function MessageLinkPill({
     threadExcerpt,
     variant,
   });
+  const channelLinkLabel = getMessageLinkChannelLabel(channelLabel);
 
   if (!interactive) {
+    if (!isSentFromThread) {
+      return (
+        <span
+          className="inline-flex min-w-0 max-w-80 items-center gap-1.5 align-baseline"
+          data-message-link=""
+        >
+          <span className="shrink-0">{MESSAGE_LINK_PREFIX}</span>
+          <span
+            className={cn(
+              MENTION_CHIP_BASE_CLASSES,
+              "min-w-0 max-w-full truncate",
+            )}
+            data-channel-link=""
+          >
+            {channelLinkLabel}
+          </span>
+        </span>
+      );
+    }
     return (
       <span className="inline-block max-w-80 truncate" data-message-link="">
         {label}
+      </span>
+    );
+  }
+
+  if (!isSentFromThread) {
+    return (
+      <span
+        className="inline-flex min-w-0 max-w-80 items-center gap-1.5 align-baseline"
+        data-message-link=""
+      >
+        <span className="shrink-0">{MESSAGE_LINK_PREFIX}</span>
+        <button
+          type="button"
+          aria-label={`Open thread in ${channelLabel}`}
+          title={label}
+          className={cn(
+            MENTION_CHIP_BASE_CLASSES,
+            MENTION_CHIP_HOVER_CLASSES,
+            "min-w-0 max-w-full cursor-pointer truncate",
+          )}
+          data-channel-link=""
+          onClick={() => {
+            onOpenMessageLink(link);
+          }}
+        >
+          {channelLinkLabel}
+        </button>
       </span>
     );
   }
@@ -40,9 +91,7 @@ export function MessageLinkPill({
       title={label}
       className={cn(
         "max-w-80 cursor-pointer truncate",
-        isSentFromThread
-          ? "inline-block min-w-0 text-left font-medium text-primary underline underline-offset-4 transition-colors hover:text-primary/80 focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
-          : [MENTION_CHIP_BASE_CLASSES, MENTION_CHIP_HOVER_CLASSES],
+        "inline-block min-w-0 text-left font-medium text-primary underline underline-offset-4 transition-colors hover:text-primary/80 focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring",
       )}
       onClick={() => {
         onOpenMessageLink(link);

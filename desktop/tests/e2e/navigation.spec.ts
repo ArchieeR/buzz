@@ -364,8 +364,11 @@ test("message links to visible root messages open the thread panel", async ({
     );
   }, link);
   const composerLink = composerInput.locator('[data-composer-message-link=""]');
-  await expect(composerLink).toHaveText("Thread in #general");
-  await expect(composerLink).toHaveClass(/mention-chip/);
+  await expect(composerLink).toContainText("Thread in");
+  const composerChannelLink = composerLink.locator('[data-channel-link=""]');
+  await expect(composerChannelLink).toHaveText("#general");
+  await expect(composerChannelLink).toHaveClass(/mention-chip/);
+  await expect(composerLink).not.toHaveClass(/mention-chip/);
   await expect(composerLink).toHaveAttribute("title", "Thread in #general");
   await expect(composerInput).not.toContainText("buzz://message");
   await page.getByTestId("send-message").click();
@@ -378,7 +381,11 @@ test("message links to visible root messages open the thread panel", async ({
   const rootThreadLink = linkMessage.getByRole("button", {
     name: "Open thread in general",
   });
-  await expect(rootThreadLink).toHaveText("Thread in #general");
+  await expect(linkMessage.locator('[data-message-link=""]')).toContainText(
+    "Thread in",
+  );
+  await expect(rootThreadLink).toHaveText("#general");
+  await expect(rootThreadLink).toHaveClass(/mention-chip/);
   await rootThreadLink.click();
 
   const threadPanel = page.getByTestId("message-thread-panel");
@@ -421,7 +428,7 @@ test("message links reopen a closed thread when the same messageId is already in
   const rootThreadLink = linkMessage.getByRole("button", {
     name: "Open thread in general",
   });
-  await expect(rootThreadLink).toHaveText("Thread in #general");
+  await expect(rootThreadLink).toHaveText("#general");
   await rootThreadLink.click();
 
   await expect(threadPanel).toBeVisible();

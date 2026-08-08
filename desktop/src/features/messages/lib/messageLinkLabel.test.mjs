@@ -1,7 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { getMessageLinkLabel } from "./messageLinkLabel.ts";
+import {
+  getMessageLinkChannelLabel,
+  getMessageLinkLabel,
+  MESSAGE_LINK_PREFIX,
+} from "./messageLinkLabel.ts";
+
+test("ordinary message links expose an Inbox-style prefix and channel label", () => {
+  assert.equal(MESSAGE_LINK_PREFIX, "Thread in");
+  assert.equal(getMessageLinkChannelLabel("general"), "#general");
+});
 
 test("ordinary message links name their target thread", () => {
   assert.equal(
