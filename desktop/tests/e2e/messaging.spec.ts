@@ -1510,13 +1510,22 @@ test("sends a thread message to its parent channel with a root-thread link", asy
   await expect(rootLink).toHaveClass(/max-w-80/);
   await expect(rootLink).toHaveClass(/truncate/);
   await expect(rootLink).toHaveClass(/inline-block/);
-  await expect(rootLink).toHaveClass(/underline/);
+  await expect(rootLink).toHaveClass(/hover:underline/);
   await expect(rootLink).not.toHaveClass(/mention-chip/);
   await expect
     .poll(() =>
       rootLink.evaluate((element) => getComputedStyle(element).backgroundColor),
     )
     .toBe("rgba(0, 0, 0, 0)");
+  await expect
+    .poll(() =>
+      rootLink.evaluate(
+        (element) => getComputedStyle(element).textDecorationLine,
+      ),
+    )
+    .toBe("none");
+
+  await rootLink.hover();
   await expect
     .poll(() =>
       rootLink.evaluate(

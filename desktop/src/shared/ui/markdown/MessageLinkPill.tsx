@@ -91,7 +91,7 @@ export function MessageLinkPill({
       title={label}
       className={cn(
         "max-w-80 cursor-pointer truncate",
-        "inline-block min-w-0 text-left font-medium text-primary underline underline-offset-4 transition-colors hover:text-primary/80 focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring",
+        "inline-block min-w-0 text-left font-medium text-primary underline-offset-4 transition-colors hover:text-primary/80 hover:underline focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring",
       )}
       onClick={() => {
         onOpenMessageLink(link);
