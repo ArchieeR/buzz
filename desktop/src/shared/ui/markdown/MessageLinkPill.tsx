@@ -11,6 +11,30 @@ import {
   MESSAGE_LINK_PREFIX,
 } from "@/features/messages/lib/messageLinkLabel";
 
+const graphemeSegmenter = new Intl.Segmenter(undefined, {
+  granularity: "grapheme",
+});
+const emojiGraphemePattern =
+  /(?:\p{Extended_Pictographic}|\p{Regional_Indicator}|[\uFE0F\u20E3])/u;
+
+function segmentLinkLabel(label: string): Array<{
+  isEmoji: boolean;
+  start: number;
+  text: string;
+}> {
+  const segments: Array<{ isEmoji: boolean; start: number; text: string }> = [];
+  for (const { index: start, segment } of graphemeSegmenter.segment(label)) {
+    const isEmoji = emojiGraphemePattern.test(segment);
+    const previous = segments.at(-1);
+    if (previous?.isEmoji === isEmoji) {
+      previous.text += segment;
+    } else {
+      segments.push({ isEmoji, start, text: segment });
+    }
+  }
+  return segments;
+}
+
 export function MessageLinkPill({
   channels,
   interactive,
@@ -91,13 +115,27 @@ export function MessageLinkPill({
       title={label}
       className={cn(
         "max-w-80 cursor-pointer truncate",
-        "inline-block min-w-0 border-b border-transparent text-left font-medium text-foreground transition-colors hover:border-current focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring",
+        "group inline-block min-w-0 text-left font-medium text-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring",
       )}
       onClick={() => {
         onOpenMessageLink(link);
       }}
     >
-      {label}
+      {segmentLinkLabel(label).map((segment) =>
+        segment.isEmoji ? (
+          <span key={segment.start} data-message-link-emoji="">
+            {segment.text}
+          </span>
+        ) : (
+          <span
+            key={segment.start}
+            className="border-b border-transparent transition-colors group-hover:border-current"
+            data-message-link-text=""
+          >
+            {segment.text}
+          </span>
+        ),
+      )}
     </button>
   );
 }
