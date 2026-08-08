@@ -5,6 +5,7 @@ import { getSentFromThreadReference } from "@/features/messages/lib/sentFromThre
 import type { ParsedMessageLink } from "@/features/messages/lib/messageLink";
 import { useChannelNavigation } from "@/shared/context/ChannelNavigationContext";
 import { MessageLinkPill } from "@/shared/ui/markdown/MessageLinkPill";
+import { MESSAGE_MARKDOWN_CLASS } from "@/shared/ui/mentionChip";
 
 export function SentFromThreadLine({
   channelId,
@@ -35,10 +36,10 @@ export function SentFromThreadLine({
 
   return (
     <div
-      className="mb-1 flex min-w-0 items-center gap-1 text-xs text-muted-foreground"
+      className={`${MESSAGE_MARKDOWN_CLASS} mb-1 flex min-w-0 items-center gap-1 text-xs text-muted-foreground`}
       data-testid="sent-from-thread"
     >
-      <span className="shrink-0">Sent from thread</span>
+      <span className="shrink-0">Sent from</span>
       <MessageLinkPill
         channels={channels}
         interactive

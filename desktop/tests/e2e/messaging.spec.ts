@@ -1434,7 +1434,8 @@ test("sends a thread message to its parent channel with a root-thread link", asy
     "npub1mock...",
   );
   const sourceLine = sharedRow.getByTestId("sent-from-thread");
-  await expect(sourceLine).toContainText("Sent from thread");
+  await expect(sourceLine).toContainText("Sent from");
+  await expect(sourceLine).toHaveClass(/message-markdown/);
   const rootLink = sourceLine.locator("[data-message-link]");
   const rootLinkLabel = `Thread in #general — ${rootContent}`;
   await expect(rootLink).toHaveText(rootLinkLabel);
@@ -1445,6 +1446,22 @@ test("sends a thread message to its parent channel with a root-thread link", asy
   await expect(rootLink).toHaveAttribute("title", rootLinkLabel);
   await expect(rootLink).toHaveClass(/max-w-80/);
   await expect(rootLink).toHaveClass(/truncate/);
+  await expect(rootLink).toHaveClass(/mention-chip/);
+  await expect
+    .poll(() =>
+      rootLink.evaluate((element) => getComputedStyle(element).display),
+    )
+    .toMatch(/flex/);
+  await expect
+    .poll(() =>
+      rootLink.evaluate((element) => getComputedStyle(element).backgroundColor),
+    )
+    .not.toBe("rgba(0, 0, 0, 0)");
+  await expect
+    .poll(() =>
+      rootLink.evaluate((element) => getComputedStyle(element).borderRadius),
+    )
+    .not.toBe("0px");
 
   await rootLink.click();
   await expect(threadPanel).toBeVisible();
