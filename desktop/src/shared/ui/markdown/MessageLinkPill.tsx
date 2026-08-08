@@ -5,6 +5,7 @@ import {
 } from "@/shared/ui/mentionChip";
 
 import type { MessageLinkPillProps } from "./types";
+import { getMessageLinkLabel } from "@/features/messages/lib/messageLinkLabel";
 
 export function MessageLinkPill({
   channels,
@@ -17,13 +18,11 @@ export function MessageLinkPill({
   const channel = channels.find((c) => c.id === link.channelId);
   const channelLabel = channel?.name ?? "channel";
   const isSentFromThread = variant === "sent-from-thread";
-  const normalizedExcerpt = threadExcerpt?.trim();
-  const baseLabel = `Thread in #${channelLabel}`;
-  const label = isSentFromThread
-    ? (normalizedExcerpt ?? baseLabel)
-    : normalizedExcerpt
-      ? `${baseLabel} — ${normalizedExcerpt}`
-      : baseLabel;
+  const label = getMessageLinkLabel({
+    channelName: channelLabel,
+    threadExcerpt,
+    variant,
+  });
 
   if (!interactive) {
     return (

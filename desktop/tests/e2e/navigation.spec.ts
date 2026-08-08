@@ -349,7 +349,25 @@ test("message links to visible root messages open the thread panel", async ({
 
   const link =
     "buzz://message?channel=9a1657ac-f7aa-5db0-b632-d8bbeb6dfb50&id=mock-general-welcome";
-  await page.getByTestId("message-input").fill(`Root link repro ${link}`);
+  const composerInput = page.getByTestId("message-input");
+  await composerInput.fill("Root link repro ");
+  await composerInput.focus();
+  await composerInput.evaluate((element, href) => {
+    const clipboardData = new DataTransfer();
+    clipboardData.setData("text/plain", href);
+    element.dispatchEvent(
+      new ClipboardEvent("paste", {
+        bubbles: true,
+        cancelable: true,
+        clipboardData,
+      }),
+    );
+  }, link);
+  const composerLink = composerInput.locator('[data-composer-message-link=""]');
+  await expect(composerLink).toHaveText("Thread in #general");
+  await expect(composerLink).toHaveClass(/mention-chip/);
+  await expect(composerLink).toHaveAttribute("title", "Thread in #general");
+  await expect(composerInput).not.toContainText("buzz://message");
   await page.getByTestId("send-message").click();
 
   const linkMessage = page
