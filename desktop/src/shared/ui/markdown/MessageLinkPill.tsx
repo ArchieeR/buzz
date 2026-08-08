@@ -135,10 +135,10 @@ export function MessageLinkPill({
         ) : (
           <span
             key={segment.start}
-            className="border-b transition-colors"
+            className="transition-shadow"
             data-message-link-text=""
             style={{
-              borderBottomColor: isHovered ? "currentColor" : "transparent",
+              boxShadow: isHovered ? "inset 0 -1px 0 currentColor" : "none",
             }}
           >
             {segment.text}

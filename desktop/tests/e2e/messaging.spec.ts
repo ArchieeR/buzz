@@ -1521,7 +1521,7 @@ test("sends a thread message to its parent channel with a root-thread link", asy
   const rootLinkText = rootLink.locator("[data-message-link-text]");
   const rootLinkEmoji = rootLink.locator("[data-message-link-emoji]");
   await expect(rootLinkText).toHaveText(` Share source thread ${timestamp}`);
-  await expect(rootLinkText).toHaveClass(/border-b/);
+  await expect(rootLinkText).not.toHaveClass(/border-b/);
   await expect(rootLinkEmoji).toHaveText("🧵");
   await expect(rootLinkEmoji).not.toHaveClass(/border-b/);
   await expect(rootLink).not.toHaveAttribute("data-hovered");
@@ -1537,11 +1537,9 @@ test("sends a thread message to its parent channel with a root-thread link", asy
     .toBe("rgba(0, 0, 0, 0)");
   await expect
     .poll(() =>
-      rootLinkText.evaluate(
-        (element) => getComputedStyle(element).borderBottomColor,
-      ),
+      rootLinkText.evaluate((element) => getComputedStyle(element).boxShadow),
     )
-    .toBe("rgba(0, 0, 0, 0)");
+    .toBe("none");
 
   await rootLink.hover();
   await expect(rootLink).toHaveAttribute("data-hovered", "");
@@ -1550,20 +1548,17 @@ test("sends a thread message to its parent channel with a root-thread link", asy
     .toBe(linkColorBeforeHover);
   await expect
     .poll(() =>
-      rootLinkText.evaluate((element) => {
-        const style = getComputedStyle(element);
-        return style.borderBottomColor === style.color;
-      }),
+      rootLinkText.evaluate(
+        (element) => getComputedStyle(element).boxShadow !== "none",
+      ),
     )
     .toBe(true);
 
   await expect
     .poll(() =>
-      rootLinkEmoji.evaluate(
-        (element) => getComputedStyle(element).borderBottomWidth,
-      ),
+      rootLinkEmoji.evaluate((element) => getComputedStyle(element).boxShadow),
     )
-    .toBe("0px");
+    .toBe("none");
 
   await rootLink.click();
   await expect(threadPanel).toBeVisible();
