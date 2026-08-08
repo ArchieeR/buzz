@@ -7,6 +7,7 @@ import type {
   useToggleReactionMutation,
 } from "@/features/messages/hooks";
 import { resolveThreadReplyTarget } from "@/features/messages/hooks";
+import { getSendToChannelSemantics } from "@/features/messages/lib/sendToChannelSemantics";
 import { summarizeThreadRoot } from "@/features/messages/lib/sentFromThread";
 import type { TimelineMessage } from "@/features/messages/types";
 
@@ -294,9 +295,13 @@ export function useChannelPaneHandlers({
       threadRoot: TimelineMessage,
       channelId: string,
     ) => {
+      const { mentionPubkeys, semanticTags } =
+        getSendToChannelSemantics(message);
       await sendMutateRef.current({
         channelId,
         content: message.body,
+        mediaTags: semanticTags,
+        mentionPubkeys,
         sentFromThreadRootExcerpt: summarizeThreadRoot(threadRoot.body),
         sentFromThreadRootId: threadRoot.id,
       });

@@ -477,12 +477,18 @@ export function useSendMessageMutation(
         identity.pubkey,
         mentionPubkeys,
       );
-      if (
-        sentFromThreadRootId &&
-        (parentEventId || imetaTags.length > 0 || emojiTags.length > 0)
-      ) {
-        throw new Error("A thread message can only be sent as top-level text.");
+      if (sentFromThreadRootId && parentEventId) {
+        throw new Error(
+          "A thread message can only be sent as a top-level message.",
+        );
       }
+
+      const sentFromThreadTag = sentFromThreadRootId
+        ? buildSentFromThreadTag(
+            sentFromThreadRootId,
+            sentFromThreadRootExcerpt,
+          )
+        : undefined;
 
       // Messages carrying media OR custom-emoji tags MUST go through REST so
       // the relay's tag validation runs. The WebSocket path emits no extra
@@ -507,6 +513,7 @@ export function useSendMessageMutation(
           emojiTags,
           mentionTags,
           linkPreviewTags,
+          sentFromThreadTag,
         );
 
         // Build tags matching relay-emitted shape: h, author p, mention ps, reply es, imeta, emoji.
@@ -545,6 +552,7 @@ export function useSendMessageMutation(
             ...emojiTags,
             ...mentionTags,
             ...linkPreviewTags,
+            ...(sentFromThreadTag ? [sentFromThreadTag] : []),
           ],
           content: content.trim(),
           sig: "",
@@ -555,17 +563,7 @@ export function useSendMessageMutation(
         effectiveChannel.id,
         content,
         recipientPubkeys,
-        [
-          ...mentionTags,
-          ...(sentFromThreadRootId
-            ? [
-                buildSentFromThreadTag(
-                  sentFromThreadRootId,
-                  sentFromThreadRootExcerpt,
-                ),
-              ]
-            : []),
-        ],
+        [...mentionTags, ...(sentFromThreadTag ? [sentFromThreadTag] : [])],
       );
     },
     onMutate: async ({

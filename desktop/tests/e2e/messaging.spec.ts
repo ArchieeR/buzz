@@ -1302,7 +1302,46 @@ test("sends a thread message to its parent channel with a root-thread link", asy
 }) => {
   const timestamp = Date.now();
   const rootContent = `Share source thread ${timestamp}`;
-  const ownReplyContent = `Share this reply ${timestamp}`;
+  const replySummary = `Share this reply ${timestamp}`;
+  const attachmentSha = "d".repeat(64);
+  const attachmentUrl = `http://localhost:3000/media/${attachmentSha}.txt`;
+  const customEmojiUrl = "https://example.com/send-to-channel-party.svg";
+  const previewUrl = "https://github.com/block/buzz/pull/5305";
+  const ownReplyContent = [
+    `${replySummary} with @alice :party:`,
+    `[launch-notes.txt](${attachmentUrl})`,
+    previewUrl,
+  ].join("\n\n");
+  const imetaTag = [
+    "imeta",
+    `url ${attachmentUrl}`,
+    "m text/plain",
+    `x ${attachmentSha}`,
+    "size 42",
+    "filename launch-notes.txt",
+  ];
+  const emojiTag = ["emoji", "party", customEmojiUrl];
+  const mentionTag = ["mention", TEST_IDENTITIES.alice.pubkey];
+  const linkPreviewTag = [
+    "link-preview",
+    "snapshot",
+    "1",
+    previewUrl,
+    "Add Send to channel for thread messages",
+    "GitHub",
+    "A shared link preview preserved from the source thread message.",
+    "",
+    "",
+    "",
+    "",
+  ];
+
+  await page.route(customEmojiUrl, (route) =>
+    route.fulfill({
+      body: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><circle cx="16" cy="16" r="15" fill="#a78bfa"/><path d="M8 18l5 5 11-13" fill="none" stroke="white" stroke-width="3"/></svg>',
+      contentType: "image/svg+xml",
+    }),
+  );
 
   await page.goto("/");
   await page.getByTestId("channel-general").click();
@@ -1317,7 +1356,7 @@ test("sends a thread message to its parent channel with a root-thread link", asy
   );
 
   const { ownReplyId, rootId } = await page.evaluate(
-    ({ alicePubkey, ownReply, root }) => {
+    ({ alicePubkey, ownReply, root, semanticTags }) => {
       const emit = window.__BUZZ_E2E_EMIT_MOCK_MESSAGE__;
       if (!emit) throw new Error("Mock message emitter is unavailable.");
       const rootEvent = emit({
@@ -1328,6 +1367,8 @@ test("sends a thread message to its parent channel with a root-thread link", asy
       const ownReplyEvent = emit({
         channelName: "general",
         content: ownReply,
+        extraTags: semanticTags,
+        mentionPubkeys: [alicePubkey],
         parentEventId: rootEvent.id,
       });
       return {
@@ -1339,6 +1380,7 @@ test("sends a thread message to its parent channel with a root-thread link", asy
       alicePubkey: TEST_IDENTITIES.alice.pubkey,
       ownReply: ownReplyContent,
       root: rootContent,
+      semanticTags: [imetaTag, emojiTag, mentionTag, linkPreviewTag],
     },
   );
 
@@ -1353,7 +1395,7 @@ test("sends a thread message to its parent channel with a root-thread link", asy
     .click();
   const threadPanel = page.getByTestId("message-thread-panel");
   const ownReplyRow = threadPanel.locator(`[data-message-id="${ownReplyId}"]`);
-  await expect(ownReplyRow).toContainText(ownReplyContent);
+  await expect(ownReplyRow).toContainText(replySummary);
   await ownReplyRow
     .getByTestId(`more-actions-${ownReplyId}`)
     .click({ force: true });
@@ -1380,47 +1422,44 @@ test("sends a thread message to its parent channel with a root-thread link", asy
   await expect
     .poll(() =>
       page.evaluate((content) => {
-        const event = window.__BUZZ_E2E_SIGNED_EVENTS__?.find(
-          (candidate) => candidate.kind === 9 && candidate.content === content,
+        return Boolean(
+          (window.__BUZZ_E2E_COMMAND_LOG__ ?? []).findLast(
+            (entry) =>
+              entry.command === "send_channel_message" &&
+              (entry.payload as { content?: string } | undefined)?.content ===
+                content,
+          ),
         );
-        return event?.tags ?? [];
       }, ownReplyContent),
     )
-    .toEqual(
-      expect.arrayContaining([
-        ["h", "9a1657ac-f7aa-5db0-b632-d8bbeb6dfb50"],
-        ["buzz:sent-from-thread", rootId, rootContent],
-      ]),
-    );
-  const signedTags = await page.evaluate(
+    .toBe(true);
+  const sentPayload = await page.evaluate(
     (content) =>
-      window.__BUZZ_E2E_SIGNED_EVENTS__?.find(
-        (candidate) => candidate.kind === 9 && candidate.content === content,
-      )?.tags ?? [],
+      (window.__BUZZ_E2E_COMMAND_LOG__ ?? []).findLast(
+        (entry) =>
+          entry.command === "send_channel_message" &&
+          (entry.payload as { content?: string } | undefined)?.content ===
+            content,
+      )?.payload as Record<string, unknown> | undefined,
     ownReplyContent,
   );
-  expect(signedTags.some((tag) => tag[0] === "e")).toBe(false);
+  expect(sentPayload).toMatchObject({
+    channelId: "9a1657ac-f7aa-5db0-b632-d8bbeb6dfb50",
+    content: ownReplyContent,
+    emojiTags: [emojiTag],
+    linkPreviewTags: [linkPreviewTag],
+    mediaTags: [imetaTag],
+    mentionPubkeys: [TEST_IDENTITIES.alice.pubkey],
+    mentionTags: [mentionTag],
+    parentEventId: null,
+    sentFromThreadTag: ["buzz:sent-from-thread", rootId, rootContent],
+  });
 
   await page.getByTestId("auxiliary-panel-close").click();
 
-  // Mirror the relay's live echo so the presentation assertion observes the
-  // accepted top-level event rather than an optimistic virtualized row.
-  await page.evaluate(
-    ({ content, tags }) => {
-      const emit = window.__BUZZ_E2E_EMIT_MOCK_MESSAGE__;
-      if (!emit) throw new Error("Mock message emitter is unavailable.");
-      emit({
-        channelName: "general",
-        content,
-        extraTags: tags.filter((tag) => tag[0] === "buzz:sent-from-thread"),
-      });
-    },
-    { content: ownReplyContent, tags: signedTags },
-  );
-
   const sharedRow = timeline
     .getByTestId("message-row")
-    .filter({ hasText: ownReplyContent })
+    .filter({ hasText: replySummary })
     .last();
   await expect
     .poll(async () => {
@@ -1433,6 +1472,17 @@ test("sends a thread message to its parent channel with a root-thread link", asy
   await expect(sharedRow.getByTestId("message-author")).toHaveText(
     "npub1mock...",
   );
+  await expect(sharedRow.locator('[data-mention=""]')).toContainText("alice");
+  await expect(sharedRow.locator("img[data-custom-emoji]")).toHaveAttribute(
+    "src",
+    customEmojiUrl,
+  );
+  await expect(sharedRow.getByTestId("file-card")).toContainText(
+    "launch-notes.txt",
+  );
+  await expect(
+    sharedRow.locator('[data-link-preview="github-pull-request"]'),
+  ).toContainText("Add Send to channel for thread messages");
   const sourceLine = sharedRow.getByTestId("sent-from-thread");
   await expect(sourceLine).toContainText("Sent from");
   await expect(sourceLine).toHaveClass(/message-markdown/);
