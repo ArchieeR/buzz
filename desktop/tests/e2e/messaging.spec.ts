@@ -1484,10 +1484,11 @@ test("sends a thread message to its parent channel with a root-thread link", asy
     sharedRow.locator('[data-link-preview="github-pull-request"]'),
   ).toContainText("Add Send to channel for thread messages");
   const sourceLine = sharedRow.getByTestId("sent-from-thread");
-  await expect(sourceLine).toContainText("Sent from");
+  await expect(sourceLine).toContainText("Sent from thread in");
   await expect(sourceLine).toHaveClass(/message-markdown/);
+  await expect(sourceLine).toHaveClass(/pt-0\.5/);
   const rootLink = sourceLine.locator("[data-message-link]");
-  const rootLinkLabel = `Thread in #general — ${rootContent}`;
+  const rootLinkLabel = `#general — ${rootContent}…`;
   await expect(rootLink).toHaveText(rootLinkLabel);
   await expect(rootLink).toHaveAttribute(
     "aria-label",

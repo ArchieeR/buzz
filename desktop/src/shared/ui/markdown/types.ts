@@ -24,6 +24,7 @@ export type MessageLinkPillProps = {
   link: ParsedMessageLink;
   onOpenMessageLink: (link: ParsedMessageLink) => void;
   threadExcerpt?: string | null;
+  variant?: "default" | "sent-from-thread";
 };
 
 export type MarkdownRuntime = {

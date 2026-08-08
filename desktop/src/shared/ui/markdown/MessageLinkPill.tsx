@@ -12,11 +12,20 @@ export function MessageLinkPill({
   link,
   onOpenMessageLink,
   threadExcerpt,
+  variant = "default",
 }: MessageLinkPillProps) {
   const channel = channels.find((c) => c.id === link.channelId);
   const channelLabel = channel?.name ?? "channel";
-  const baseLabel = `Thread in #${channelLabel}`;
-  const label = threadExcerpt ? `${baseLabel} — ${threadExcerpt}` : baseLabel;
+  const isSentFromThread = variant === "sent-from-thread";
+  const baseLabel = isSentFromThread
+    ? `#${channelLabel}`
+    : `Thread in #${channelLabel}`;
+  const normalizedExcerpt = threadExcerpt?.trim();
+  const displayExcerpt =
+    isSentFromThread && normalizedExcerpt
+      ? `${normalizedExcerpt.replace(/[.…]+$/u, "")}…`
+      : normalizedExcerpt;
+  const label = displayExcerpt ? `${baseLabel} — ${displayExcerpt}` : baseLabel;
 
   if (!interactive) {
     return (

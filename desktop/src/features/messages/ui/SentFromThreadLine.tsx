@@ -36,16 +36,17 @@ export function SentFromThreadLine({
 
   return (
     <div
-      className={`${MESSAGE_MARKDOWN_CLASS} mb-1 flex min-w-0 items-center gap-1 text-xs text-muted-foreground`}
+      className={`${MESSAGE_MARKDOWN_CLASS} mb-1 flex min-w-0 items-center gap-1 pt-0.5 text-xs text-muted-foreground`}
       data-testid="sent-from-thread"
     >
-      <span className="shrink-0">Sent from</span>
+      <span className="shrink-0">Sent from thread in</span>
       <MessageLinkPill
         channels={channels}
         interactive
         link={link}
         onOpenMessageLink={onOpenMessageLink}
         threadExcerpt={reference.rootExcerpt}
+        variant="sent-from-thread"
       />
     </div>
   );
