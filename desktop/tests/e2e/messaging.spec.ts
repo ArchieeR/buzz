@@ -1522,10 +1522,9 @@ test("sends a thread message to its parent channel with a root-thread link", asy
   const rootLinkEmoji = rootLink.locator("[data-message-link-emoji]");
   await expect(rootLinkText).toHaveText(` Share source thread ${timestamp}`);
   await expect(rootLinkText).toHaveClass(/border-b/);
-  await expect(rootLinkText).toHaveClass(/border-transparent/);
-  await expect(rootLinkText).toHaveClass(/group-hover:border-current/);
   await expect(rootLinkEmoji).toHaveText("🧵");
   await expect(rootLinkEmoji).not.toHaveClass(/border-b/);
+  await expect(rootLink).not.toHaveAttribute("data-hovered");
   const [prefixColor, linkColorBeforeHover] = await Promise.all([
     sourcePrefix.evaluate((element) => getComputedStyle(element).color),
     rootLink.evaluate((element) => getComputedStyle(element).color),
@@ -1545,6 +1544,7 @@ test("sends a thread message to its parent channel with a root-thread link", asy
     .toBe("rgba(0, 0, 0, 0)");
 
   await rootLink.hover();
+  await expect(rootLink).toHaveAttribute("data-hovered", "");
   await expect
     .poll(() => rootLink.evaluate((element) => getComputedStyle(element).color))
     .toBe(linkColorBeforeHover);

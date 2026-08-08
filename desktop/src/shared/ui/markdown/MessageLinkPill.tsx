@@ -1,3 +1,5 @@
+import * as React from "react";
+
 import { cn } from "@/shared/lib/cn";
 import {
   MENTION_CHIP_BASE_CLASSES,
@@ -43,6 +45,7 @@ export function MessageLinkPill({
   threadExcerpt,
   variant = "default",
 }: MessageLinkPillProps) {
+  const [isHovered, setIsHovered] = React.useState(false);
   const channel = channels.find((c) => c.id === link.channelId);
   const channelLabel = channel?.name ?? "channel";
   const isSentFromThread = variant === "sent-from-thread";
@@ -111,12 +114,15 @@ export function MessageLinkPill({
     <button
       type="button"
       data-message-link=""
+      data-hovered={isHovered ? "" : undefined}
       aria-label={`Open thread in ${channelLabel}`}
       title={label}
       className={cn(
         "max-w-80 cursor-pointer truncate",
-        "group inline-block min-w-0 text-left font-medium text-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring",
+        "inline-block min-w-0 text-left font-medium text-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring",
       )}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       onClick={() => {
         onOpenMessageLink(link);
       }}
@@ -129,8 +135,11 @@ export function MessageLinkPill({
         ) : (
           <span
             key={segment.start}
-            className="border-b border-transparent transition-colors group-hover:border-current"
+            className="border-b transition-colors"
             data-message-link-text=""
+            style={{
+              borderBottomColor: isHovered ? "currentColor" : "transparent",
+            }}
           >
             {segment.text}
           </span>
