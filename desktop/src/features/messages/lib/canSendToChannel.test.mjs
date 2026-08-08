@@ -31,6 +31,19 @@ test("send-to-channel permits messages from an agent owned by the viewer", () =>
   );
 });
 
+test("send-to-channel rejects pending messages", () => {
+  const pendingMessage = { ...message(CURRENT), pending: true };
+
+  assert.equal(
+    canSendMessageToChannel(pendingMessage, CURRENT, profiles),
+    false,
+  );
+  assert.throws(
+    () => assertCanSendMessageToChannel(pendingMessage, CURRENT, profiles),
+    /finish sending first/,
+  );
+});
+
 test("send-to-channel rejects third-party people and agents", () => {
   assert.equal(
     canSendMessageToChannel(message(OTHER_PERSON), CURRENT, profiles),

@@ -7,7 +7,10 @@ export function canSendMessageToChannel(
   currentPubkey: string | undefined,
   profiles: UserProfileLookup | undefined,
 ): boolean {
-  return canManageMessageForCurrentUser(message, currentPubkey, profiles);
+  return (
+    !message.pending &&
+    canManageMessageForCurrentUser(message, currentPubkey, profiles)
+  );
 }
 
 export function assertCanSendMessageToChannel(
@@ -15,7 +18,10 @@ export function assertCanSendMessageToChannel(
   currentPubkey: string | undefined,
   profiles: UserProfileLookup | undefined,
 ): void {
-  if (!canSendMessageToChannel(message, currentPubkey, profiles)) {
+  if (message.pending) {
+    throw new Error("Wait for the message to finish sending first.");
+  }
+  if (!canManageMessageForCurrentUser(message, currentPubkey, profiles)) {
     throw new Error("You can only send your own or your agents' messages.");
   }
 }
