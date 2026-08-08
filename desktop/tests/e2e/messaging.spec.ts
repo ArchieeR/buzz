@@ -1500,9 +1500,9 @@ test("sends a thread message to its parent channel with a root-thread link", asy
   await expect(sourceLine).toHaveClass(/message-markdown/);
   await expect(sourceLine).toHaveClass(/pt-0\.5/);
   await expect(sourceLine).toHaveClass(/text-2xs/);
-  await expect(sourceLine).toHaveClass(/font-medium/);
+  await expect(sourceLine).toHaveClass(/font-normal/);
   await expect(sourceLine).toHaveClass(/leading-3/);
-  await expect(sourceLine).toHaveClass(/text-muted-foreground\/80/);
+  await expect(sourceLine).toHaveClass(/text-muted-foreground\/70/);
   const rootLink = sourceLine.locator("[data-message-link]");
   const sourcePrefix = sourceLine.locator("span").first();
   const rootLinkLabel = rootContent;
@@ -1515,9 +1515,9 @@ test("sends a thread message to its parent channel with a root-thread link", asy
   await expect(rootLink).toHaveClass(/max-w-80/);
   await expect(rootLink).toHaveClass(/truncate/);
   await expect(rootLink).toHaveClass(/inline-block/);
-  await expect(rootLink).toHaveClass(/hover:underline/);
-  await expect(rootLink).toHaveClass(/underline-offset-2/);
-  await expect(rootLink).toHaveClass(/decoration-current/);
+  await expect(rootLink).toHaveClass(/border-b/);
+  await expect(rootLink).toHaveClass(/border-transparent/);
+  await expect(rootLink).toHaveClass(/hover:border-current/);
   await expect(rootLink).not.toHaveClass(/mention-chip/);
   const [prefixColor, linkColor] = await Promise.all([
     sourcePrefix.evaluate((element) => getComputedStyle(element).color),
@@ -1532,19 +1532,20 @@ test("sends a thread message to its parent channel with a root-thread link", asy
   await expect
     .poll(() =>
       rootLink.evaluate(
-        (element) => getComputedStyle(element).textDecorationLine,
+        (element) => getComputedStyle(element).borderBottomColor,
       ),
     )
-    .toBe("none");
+    .toBe("rgba(0, 0, 0, 0)");
 
   await rootLink.hover();
   await expect
     .poll(() =>
-      rootLink.evaluate(
-        (element) => getComputedStyle(element).textDecorationLine,
-      ),
+      rootLink.evaluate((element) => {
+        const style = getComputedStyle(element);
+        return style.borderBottomColor === style.color;
+      }),
     )
-    .toContain("underline");
+    .toBe(true);
 
   await rootLink.click();
   await expect(threadPanel).toBeVisible();
