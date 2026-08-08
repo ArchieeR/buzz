@@ -1302,6 +1302,7 @@ test("sends a thread message to its parent channel with a root-thread link", asy
 }) => {
   const timestamp = Date.now();
   const rootContent = `Share source thread ${timestamp}`;
+  const priorChannelMessage = `Prior channel message ${timestamp}`;
   const replySummary = `Share this reply ${timestamp}`;
   const attachmentSha = "d".repeat(64);
   const attachmentUrl = `http://localhost:3000/media/${attachmentSha}.txt`;
@@ -1388,6 +1389,16 @@ test("sends a thread message to its parent channel with a root-thread link", asy
   const rootRow = timeline.locator(`[data-message-id="${rootId}"]`);
   await expect(rootRow).toContainText(rootContent);
 
+  await page.getByTestId("message-input").fill(priorChannelMessage);
+  await page.getByTestId("send-message").click();
+  const priorChannelRow = timeline
+    .getByTestId("message-row")
+    .filter({ hasText: priorChannelMessage });
+  await expect(priorChannelRow).toBeVisible();
+  await expect(priorChannelRow.getByTestId("message-send-status")).toHaveCount(
+    0,
+  );
+
   await timeline
     .locator(
       `[data-testid="message-thread-summary"][data-thread-head-id="${rootId}"]`,
@@ -1472,6 +1483,7 @@ test("sends a thread message to its parent channel with a root-thread link", asy
   await expect(sharedRow.getByTestId("message-author")).toHaveText(
     "npub1mock...",
   );
+  await expect(sharedRow.getByTestId("message-avatar-fallback")).toBeVisible();
   await expect(sharedRow.locator('[data-mention=""]')).toContainText("alice");
   await expect(sharedRow.locator("img[data-custom-emoji]")).toHaveAttribute(
     "src",
