@@ -39,7 +39,7 @@ export function SentFromThreadLine({
       className={`${MESSAGE_MARKDOWN_CLASS} mb-1 flex min-w-0 items-center gap-1 pt-0.5 text-xs text-muted-foreground`}
       data-testid="sent-from-thread"
     >
-      <span className="shrink-0">Sent from thread in</span>
+      <span className="shrink-0">Sent from thread:</span>
       <MessageLinkPill
         channels={channels}
         interactive

@@ -1484,11 +1484,11 @@ test("sends a thread message to its parent channel with a root-thread link", asy
     sharedRow.locator('[data-link-preview="github-pull-request"]'),
   ).toContainText("Add Send to channel for thread messages");
   const sourceLine = sharedRow.getByTestId("sent-from-thread");
-  await expect(sourceLine).toContainText("Sent from thread in");
+  await expect(sourceLine).toContainText("Sent from thread:");
   await expect(sourceLine).toHaveClass(/message-markdown/);
   await expect(sourceLine).toHaveClass(/pt-0\.5/);
   const rootLink = sourceLine.locator("[data-message-link]");
-  const rootLinkLabel = `#general — ${rootContent}…`;
+  const rootLinkLabel = rootContent;
   await expect(rootLink).toHaveText(rootLinkLabel);
   await expect(rootLink).toHaveAttribute(
     "aria-label",
@@ -1497,22 +1497,21 @@ test("sends a thread message to its parent channel with a root-thread link", asy
   await expect(rootLink).toHaveAttribute("title", rootLinkLabel);
   await expect(rootLink).toHaveClass(/max-w-80/);
   await expect(rootLink).toHaveClass(/truncate/);
-  await expect(rootLink).toHaveClass(/mention-chip/);
-  await expect
-    .poll(() =>
-      rootLink.evaluate((element) => getComputedStyle(element).display),
-    )
-    .toMatch(/flex/);
+  await expect(rootLink).toHaveClass(/inline-block/);
+  await expect(rootLink).toHaveClass(/underline/);
+  await expect(rootLink).not.toHaveClass(/mention-chip/);
   await expect
     .poll(() =>
       rootLink.evaluate((element) => getComputedStyle(element).backgroundColor),
     )
-    .not.toBe("rgba(0, 0, 0, 0)");
+    .toBe("rgba(0, 0, 0, 0)");
   await expect
     .poll(() =>
-      rootLink.evaluate((element) => getComputedStyle(element).borderRadius),
+      rootLink.evaluate(
+        (element) => getComputedStyle(element).textDecorationLine,
+      ),
     )
-    .not.toBe("0px");
+    .toContain("underline");
 
   await rootLink.click();
   await expect(threadPanel).toBeVisible();

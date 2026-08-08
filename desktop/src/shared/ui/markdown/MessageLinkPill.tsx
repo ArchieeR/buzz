@@ -17,15 +17,13 @@ export function MessageLinkPill({
   const channel = channels.find((c) => c.id === link.channelId);
   const channelLabel = channel?.name ?? "channel";
   const isSentFromThread = variant === "sent-from-thread";
-  const baseLabel = isSentFromThread
-    ? `#${channelLabel}`
-    : `Thread in #${channelLabel}`;
   const normalizedExcerpt = threadExcerpt?.trim();
-  const displayExcerpt =
-    isSentFromThread && normalizedExcerpt
-      ? `${normalizedExcerpt.replace(/[.…]+$/u, "")}…`
-      : normalizedExcerpt;
-  const label = displayExcerpt ? `${baseLabel} — ${displayExcerpt}` : baseLabel;
+  const baseLabel = `Thread in #${channelLabel}`;
+  const label = isSentFromThread
+    ? (normalizedExcerpt ?? baseLabel)
+    : normalizedExcerpt
+      ? `${baseLabel} — ${normalizedExcerpt}`
+      : baseLabel;
 
   if (!interactive) {
     return (
@@ -43,8 +41,9 @@ export function MessageLinkPill({
       title={label}
       className={cn(
         "max-w-80 cursor-pointer truncate",
-        MENTION_CHIP_BASE_CLASSES,
-        MENTION_CHIP_HOVER_CLASSES,
+        isSentFromThread
+          ? "inline-block min-w-0 text-left font-medium text-primary underline underline-offset-4 transition-colors hover:text-primary/80 focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+          : [MENTION_CHIP_BASE_CLASSES, MENTION_CHIP_HOVER_CLASSES],
       )}
       onClick={() => {
         onOpenMessageLink(link);
