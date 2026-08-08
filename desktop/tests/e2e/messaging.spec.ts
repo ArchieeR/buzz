@@ -1499,7 +1499,12 @@ test("sends a thread message to its parent channel with a root-thread link", asy
   await expect(sourceLine).toContainText("Sent from thread:");
   await expect(sourceLine).toHaveClass(/message-markdown/);
   await expect(sourceLine).toHaveClass(/pt-0\.5/);
+  await expect(sourceLine).toHaveClass(/text-2xs/);
+  await expect(sourceLine).toHaveClass(/font-medium/);
+  await expect(sourceLine).toHaveClass(/leading-3/);
+  await expect(sourceLine).toHaveClass(/text-muted-foreground\/80/);
   const rootLink = sourceLine.locator("[data-message-link]");
+  const sourcePrefix = sourceLine.locator("span").first();
   const rootLinkLabel = rootContent;
   await expect(rootLink).toHaveText(rootLinkLabel);
   await expect(rootLink).toHaveAttribute(
@@ -1511,7 +1516,14 @@ test("sends a thread message to its parent channel with a root-thread link", asy
   await expect(rootLink).toHaveClass(/truncate/);
   await expect(rootLink).toHaveClass(/inline-block/);
   await expect(rootLink).toHaveClass(/hover:underline/);
+  await expect(rootLink).toHaveClass(/underline-offset-2/);
+  await expect(rootLink).toHaveClass(/decoration-current/);
   await expect(rootLink).not.toHaveClass(/mention-chip/);
+  const [prefixColor, linkColor] = await Promise.all([
+    sourcePrefix.evaluate((element) => getComputedStyle(element).color),
+    rootLink.evaluate((element) => getComputedStyle(element).color),
+  ]);
+  expect(linkColor).toBe(prefixColor);
   await expect
     .poll(() =>
       rootLink.evaluate((element) => getComputedStyle(element).backgroundColor),
