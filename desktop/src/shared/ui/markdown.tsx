@@ -1366,7 +1366,6 @@ function createMarkdownComponents(
           return (
             <MessageLinkPill
               channels={channels}
-              href={href}
               interactive={interactive}
               link={messageLinkTarget.link}
               onOpenMessageLink={onOpenMessageLink}
@@ -1724,7 +1723,6 @@ function createMarkdownComponents(
       return (
         <MessageLinkPill
           channels={channels}
-          href={href}
           interactive={interactive}
           link={parsed.value}
           onOpenMessageLink={onOpenMessageLink}

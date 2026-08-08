@@ -20,10 +20,10 @@ export type ImetaLookup = Map<string, ImetaEntry>;
 
 export type MessageLinkPillProps = {
   channels: Channel[];
-  href: string;
   interactive: boolean;
   link: ParsedMessageLink;
   onOpenMessageLink: (link: ParsedMessageLink) => void;
+  threadExcerpt?: string | null;
 };
 
 export type MarkdownRuntime = {

@@ -84,8 +84,7 @@ import { useChannelRouteTarget } from "./useChannelRouteTarget";
 import { useChannelOpenReadState } from "./useChannelOpenReadState";
 import { useChannelUnreadState } from "./useChannelUnreadState";
 import type { ChannelScreenProps } from "./ChannelScreen.types";
-const HEADER_ACTIONS_COMPACT_BREAKPOINT_PX = 760,
-  EMPTY_RELAY_EVENTS: RelayEvent[] = [];
+const EMPTY_RELAY_EVENTS: RelayEvent[] = [];
 export function ChannelScreen({
   activeChannel,
   autoSendDraftKey,
@@ -495,6 +494,7 @@ export function ChannelScreen({
     handleExpandThreadReplies,
     handleOpenThread,
     handleSendMessage,
+    handleSendToChannel,
     handleSendThreadReply,
     handleSelectThreadReplyTarget,
     handleToggleReaction,
@@ -713,7 +713,7 @@ export function ChannelScreen({
   const shouldCompactHeaderActions =
     hasAuxiliaryPanel &&
     channelContentWidthPx > 0 &&
-    channelContentWidthPx < HEADER_ACTIONS_COMPACT_BREAKPOINT_PX;
+    channelContentWidthPx < 760;
   const channelHeaderChromeRef = useMeasuredCssVariable({
     targetRef: mainInsetRef,
     ...channelContentTopPaddingMeasurement,
@@ -940,6 +940,7 @@ export function ChannelScreen({
                   onOpenThread={handleOpenThreadAndCloseAgentSession}
                   onSelectThreadReplyTarget={handleSelectThreadReplyTarget}
                   onSendMessage={handleSendMessage}
+                  onSendToChannel={handleSendToChannel}
                   onSendVideoReviewComment={effectiveSendVideoReviewComment}
                   onSendThreadReply={handleSendThreadReply}
                   onThreadScrollTargetResolved={

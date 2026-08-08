@@ -27,6 +27,7 @@ import {
 export { mergeMessages, mergeTimelineCacheMessages };
 import { splitOutgoingTags } from "@/features/messages/lib/imetaMediaMarkdown";
 import { messageMentionPubkeys } from "@/features/messages/lib/messageMentionPubkeys";
+import { buildSentFromThreadTag } from "@/features/messages/lib/sentFromThread";
 import {
   clearTimeoutState,
   recordTimeoutFromRejection,
@@ -87,6 +88,8 @@ export function createOptimisticMessage(
   mentionPubkeys: string[] = [],
   parentEventId: string | null = null,
   mediaTags: string[][] = [],
+  sentFromThreadRootId: string | null = null,
+  sentFromThreadRootExcerpt: string | null = null,
 ): RelayEvent {
   const localKey = `optimistic-${crypto.randomUUID()}`;
   const tags: string[][] = [];
@@ -114,6 +117,11 @@ export function createOptimisticMessage(
 
   for (const tag of mediaTags) {
     tags.push(tag);
+  }
+  if (sentFromThreadRootId) {
+    tags.push(
+      buildSentFromThreadTag(sentFromThreadRootId, sentFromThreadRootExcerpt),
+    );
   }
 
   return {
@@ -413,6 +421,8 @@ export function useSendMessageMutation(
       mentionPubkeys?: string[];
       parentEventId?: string | null;
       mediaTags?: string[][];
+      sentFromThreadRootId?: string | null;
+      sentFromThreadRootExcerpt?: string | null;
     },
     MessageQueryContext | undefined
   >({
@@ -423,6 +433,8 @@ export function useSendMessageMutation(
       mentionPubkeys,
       parentEventId,
       mediaTags,
+      sentFromThreadRootId,
+      sentFromThreadRootExcerpt,
     }) => {
       // Prefer a channel captured by the caller at compose time. Otherwise,
       // resolve a captured id from the shared channel cache so navigation
@@ -464,6 +476,12 @@ export function useSendMessageMutation(
         identity.pubkey,
         mentionPubkeys,
       );
+      if (
+        sentFromThreadRootId &&
+        (parentEventId || imetaTags.length > 0 || emojiTags.length > 0)
+      ) {
+        throw new Error("A thread message can only be sent as top-level text.");
+      }
 
       // Messages carrying media OR custom-emoji tags MUST go through REST so
       // the relay's tag validation runs. The WebSocket path emits no extra
@@ -529,7 +547,17 @@ export function useSendMessageMutation(
         effectiveChannel.id,
         content,
         recipientPubkeys,
-        mentionTags,
+        [
+          ...mentionTags,
+          ...(sentFromThreadRootId
+            ? [
+                buildSentFromThreadTag(
+                  sentFromThreadRootId,
+                  sentFromThreadRootExcerpt,
+                ),
+              ]
+            : []),
+        ],
       );
     },
     onMutate: async ({
@@ -539,6 +567,8 @@ export function useSendMessageMutation(
       mentionPubkeys,
       parentEventId,
       mediaTags,
+      sentFromThreadRootId,
+      sentFromThreadRootExcerpt,
     }) => {
       // Mirror mutationFn's target resolution so the optimistic message lands
       // in the cache for the same channel as the real send. A caller-supplied
@@ -574,6 +604,8 @@ export function useSendMessageMutation(
         mentionPubkeys ?? [],
         parentEventId ?? null,
         mediaTags ?? [],
+        sentFromThreadRootId ?? null,
+        sentFromThreadRootExcerpt ?? null,
       );
 
       const nextWindow = mergeLiveChannelWindowEvent(

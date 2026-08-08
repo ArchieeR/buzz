@@ -634,6 +634,162 @@ test("send message to DM channel p-tags the recipient", async ({ page }) => {
     .toContainEqual(["p", TEST_IDENTITIES.alice.pubkey]);
 });
 
+test("sends a thread message to its parent channel with a root-thread link", async ({
+  page,
+}) => {
+  const timestamp = Date.now();
+  const rootContent = `Share source thread ${timestamp}`;
+  const ownReplyContent = `Share this reply ${timestamp}`;
+
+  await page.goto("/");
+  await page.getByTestId("channel-general").click();
+  await expect(page.getByTestId("chat-title")).toHaveText("general");
+  await page.waitForFunction(
+    () =>
+      typeof window.__BUZZ_E2E_EMIT_MOCK_MESSAGE__ === "function" &&
+      (window.__BUZZ_E2E_HAS_MOCK_LIVE_SUBSCRIPTION__?.({
+        channelName: "general",
+      }) ??
+        false),
+  );
+
+  const { ownReplyId, rootId } = await page.evaluate(
+    ({ alicePubkey, ownReply, root }) => {
+      const emit = window.__BUZZ_E2E_EMIT_MOCK_MESSAGE__;
+      if (!emit) throw new Error("Mock message emitter is unavailable.");
+      const rootEvent = emit({
+        channelName: "general",
+        content: root,
+        pubkey: alicePubkey,
+      });
+      const ownReplyEvent = emit({
+        channelName: "general",
+        content: ownReply,
+        parentEventId: rootEvent.id,
+      });
+      return {
+        ownReplyId: ownReplyEvent.id,
+        rootId: rootEvent.id,
+      };
+    },
+    {
+      alicePubkey: TEST_IDENTITIES.alice.pubkey,
+      ownReply: ownReplyContent,
+      root: rootContent,
+    },
+  );
+
+  const timeline = page.getByTestId("message-timeline");
+  const rootRow = timeline.locator(`[data-message-id="${rootId}"]`);
+  await expect(rootRow).toContainText(rootContent);
+
+  await timeline
+    .locator(
+      `[data-testid="message-thread-summary"][data-thread-head-id="${rootId}"]`,
+    )
+    .click();
+  const threadPanel = page.getByTestId("message-thread-panel");
+  const ownReplyRow = threadPanel.locator(`[data-message-id="${ownReplyId}"]`);
+  await expect(ownReplyRow).toContainText(ownReplyContent);
+  await ownReplyRow
+    .getByTestId(`more-actions-${ownReplyId}`)
+    .click({ force: true });
+  const sendToChannelItem = page.getByRole("menuitem", {
+    name: "Send to channel",
+  });
+  const sendToChannelIcon = sendToChannelItem.getByTestId(
+    "send-to-channel-icon",
+  );
+  await expect(sendToChannelIcon).toBeVisible();
+  await expect(sendToChannelIcon).toHaveAttribute("aria-hidden", "true");
+  await expect(sendToChannelIcon).toHaveClass(/lucide-hash-arrow-in/);
+  await expect
+    .poll(async () => {
+      const box = await sendToChannelIcon.boundingBox();
+      return box ? [box.width, box.height] : null;
+    })
+    .toEqual([16, 16]);
+  await sendToChannelItem.click();
+
+  await expect(
+    page.locator("[data-sonner-toast]").filter({ hasText: "Sent to channel" }),
+  ).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate((content) => {
+        const event = window.__BUZZ_E2E_SIGNED_EVENTS__?.find(
+          (candidate) => candidate.kind === 9 && candidate.content === content,
+        );
+        return event?.tags ?? [];
+      }, ownReplyContent),
+    )
+    .toEqual(
+      expect.arrayContaining([
+        ["h", "9a1657ac-f7aa-5db0-b632-d8bbeb6dfb50"],
+        ["buzz:sent-from-thread", rootId, rootContent],
+      ]),
+    );
+  const signedTags = await page.evaluate(
+    (content) =>
+      window.__BUZZ_E2E_SIGNED_EVENTS__?.find(
+        (candidate) => candidate.kind === 9 && candidate.content === content,
+      )?.tags ?? [],
+    ownReplyContent,
+  );
+  expect(signedTags.some((tag) => tag[0] === "e")).toBe(false);
+
+  await page.getByTestId("auxiliary-panel-close").click();
+
+  // Mirror the relay's live echo so the presentation assertion observes the
+  // accepted top-level event rather than an optimistic virtualized row.
+  await page.evaluate(
+    ({ content, tags }) => {
+      const emit = window.__BUZZ_E2E_EMIT_MOCK_MESSAGE__;
+      if (!emit) throw new Error("Mock message emitter is unavailable.");
+      emit({
+        channelName: "general",
+        content,
+        extraTags: tags.filter((tag) => tag[0] === "buzz:sent-from-thread"),
+      });
+    },
+    { content: ownReplyContent, tags: signedTags },
+  );
+
+  const sharedRow = timeline
+    .getByTestId("message-row")
+    .filter({ hasText: ownReplyContent })
+    .last();
+  await expect
+    .poll(async () => {
+      if (await sharedRow.isVisible()) return true;
+      const scrollToLatest = page.getByTestId("message-scroll-to-latest");
+      if (await scrollToLatest.isVisible()) await scrollToLatest.click();
+      return false;
+    })
+    .toBe(true);
+  await expect(sharedRow.getByTestId("message-author")).toHaveText(
+    "npub1mock...",
+  );
+  const sourceLine = sharedRow.getByTestId("sent-from-thread");
+  await expect(sourceLine).toContainText("Sent from thread");
+  const rootLink = sourceLine.locator("[data-message-link]");
+  const rootLinkLabel = `Thread in #general — ${rootContent}`;
+  await expect(rootLink).toHaveText(rootLinkLabel);
+  await expect(rootLink).toHaveAttribute(
+    "aria-label",
+    "Open thread in general",
+  );
+  await expect(rootLink).toHaveAttribute("title", rootLinkLabel);
+  await expect(rootLink).toHaveClass(/max-w-80/);
+  await expect(rootLink).toHaveClass(/truncate/);
+
+  await rootLink.click();
+  await expect(threadPanel).toBeVisible();
+  await expect(threadPanel.getByTestId("message-thread-head")).toContainText(
+    rootContent,
+  );
+});
+
 test("shows your avatar on your own message when profile avatar is set", async ({
   page,
 }) => {

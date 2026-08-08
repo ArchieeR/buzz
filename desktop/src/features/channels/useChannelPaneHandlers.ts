@@ -7,6 +7,7 @@ import type {
   useToggleReactionMutation,
 } from "@/features/messages/hooks";
 import { resolveThreadReplyTarget } from "@/features/messages/hooks";
+import { summarizeThreadRoot } from "@/features/messages/lib/sentFromThread";
 import type { TimelineMessage } from "@/features/messages/types";
 
 /**
@@ -287,6 +288,22 @@ export function useChannelPaneHandlers({
     [],
   );
 
+  const handleSendToChannel = React.useCallback(
+    async (
+      message: TimelineMessage,
+      threadRoot: TimelineMessage,
+      channelId: string,
+    ) => {
+      await sendMutateRef.current({
+        channelId,
+        content: message.body,
+        sentFromThreadRootExcerpt: summarizeThreadRoot(threadRoot.body),
+        sentFromThreadRootId: threadRoot.id,
+      });
+    },
+    [],
+  );
+
   const handleSendThreadReply = React.useCallback(
     async (
       content: string,
@@ -376,6 +393,7 @@ export function useChannelPaneHandlers({
     handleExpandThreadReplies,
     handleOpenThread,
     handleSendMessage,
+    handleSendToChannel,
     handleSendThreadReply,
     handleSelectThreadReplyTarget,
     handleToggleReaction,

@@ -357,9 +357,11 @@ test("message links to visible root messages open the thread panel", async ({
     .filter({ hasText: "Root link repro" })
     .last();
   await expect(linkMessage).toBeVisible();
-  await linkMessage
-    .getByRole("button", { name: "Open message in general" })
-    .click();
+  const rootThreadLink = linkMessage.getByRole("button", {
+    name: "Open thread in general",
+  });
+  await expect(rootThreadLink).toHaveText("Thread in #general");
+  await rootThreadLink.click();
 
   const threadPanel = page.getByTestId("message-thread-panel");
   await expect(threadPanel).toBeVisible();
@@ -398,9 +400,11 @@ test("message links reopen a closed thread when the same messageId is already in
     .filter({ hasText: "Reopen same root link repro" })
     .last();
   await expect(linkMessage).toBeVisible();
-  await linkMessage
-    .getByRole("button", { name: "Open message in general" })
-    .click();
+  const rootThreadLink = linkMessage.getByRole("button", {
+    name: "Open thread in general",
+  });
+  await expect(rootThreadLink).toHaveText("Thread in #general");
+  await rootThreadLink.click();
 
   await expect(threadPanel).toBeVisible();
   await expect(threadPanel.getByTestId("message-thread-head")).toContainText(

@@ -8,32 +8,32 @@ import type { MessageLinkPillProps } from "./types";
 
 export function MessageLinkPill({
   channels,
-  href,
   interactive,
   link,
   onOpenMessageLink,
+  threadExcerpt,
 }: MessageLinkPillProps) {
   const channel = channels.find((c) => c.id === link.channelId);
   const channelLabel = channel?.name ?? "channel";
-  const shortId = link.messageId.slice(0, 6);
-  const label = (
-    <>
-      #{channelLabel} · {shortId}
-    </>
-  );
+  const baseLabel = `Thread in #${channelLabel}`;
+  const label = threadExcerpt ? `${baseLabel} — ${threadExcerpt}` : baseLabel;
 
   if (!interactive) {
-    return <span data-message-link="">{label}</span>;
+    return (
+      <span className="inline-block max-w-80 truncate" data-message-link="">
+        {label}
+      </span>
+    );
   }
 
   return (
     <button
       type="button"
       data-message-link=""
-      aria-label={`Open message in ${channelLabel}`}
-      title={href}
+      aria-label={`Open thread in ${channelLabel}`}
+      title={label}
       className={cn(
-        "cursor-pointer",
+        "max-w-80 cursor-pointer truncate",
         MENTION_CHIP_BASE_CLASSES,
         MENTION_CHIP_HOVER_CLASSES,
       )}
