@@ -54,13 +54,18 @@
 }
 
 .buzz-avatar-framing-slider-hashmark[data-reset="true"] {
-  top: 50%;
+  top: 24px;
   z-index: 3;
   height: 4px;
   width: 4px;
   background: transparent;
   cursor: pointer;
   pointer-events: auto;
+}
+
+.buzz-avatar-framing-slider-wrapper:has(.buzz-avatar-framing-slider--compact)
+  .buzz-avatar-framing-slider-hashmark[data-reset="true"] {
+  top: 16px;
 }
 
 .buzz-avatar-framing-slider[data-active="true"]

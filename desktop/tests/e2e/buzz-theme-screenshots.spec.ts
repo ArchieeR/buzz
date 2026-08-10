@@ -500,23 +500,10 @@ test("appearance groups theme and preferences into labeled rows", async ({
   await expect(themeCard.getByTestId("glass-background-toggle")).toBeVisible();
   await expect(
     themeCard.getByTestId("prominent-active-tab-toggle"),
-  ).toBeChecked();
+  ).toHaveCount(0);
   await expect(
     preferencesCard.getByTestId("prominent-active-tab-toggle"),
   ).toHaveCount(0);
-  const glassBeforeProminent = await themeCard.evaluate((card) => {
-    const glass = card.querySelector('[data-testid="glass-background-toggle"]');
-    const prominent = card.querySelector(
-      '[data-testid="prominent-active-tab-row"]',
-    );
-    return Boolean(
-      glass &&
-        prominent &&
-        glass.compareDocumentPosition(prominent) &
-          Node.DOCUMENT_POSITION_FOLLOWING,
-    );
-  });
-  expect(glassBeforeProminent).toBe(true);
   await expect(
     preferencesCard.getByTestId("thread-layout-trigger"),
   ).toBeVisible();
@@ -1257,6 +1244,7 @@ test("accent picker reveals/hides when toggling Buzz", async ({ page }) => {
   });
   const accentOptions = page.getByTestId("accent-color-options");
   await accentOptions.scrollIntoViewIfNeeded();
+  await waitForAnimations(page);
   await accentOptions.screenshot({
     path: `${SHOTS}/13-appearance-accent-row.png`,
   });

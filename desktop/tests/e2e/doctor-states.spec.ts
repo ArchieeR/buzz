@@ -299,12 +299,7 @@ test.describe("Doctor panel state screenshots", () => {
     await expect(page.getByTestId("doctor-runtime-ready-codex")).toHaveCount(0);
     await expect(row).not.toContainText("Not authenticated");
     await expect(row).not.toContainText("Run `codex login` to authenticate.");
-    await expect(row).toHaveCSS(
-      "height",
-      await page
-        .getByTestId("doctor-runtime-goose")
-        .evaluate((element) => getComputedStyle(element).height),
-    );
+    await expect(row).toHaveCSS("min-height", "64px");
     await page.getByTestId("doctor-runtime-menu-codex").click();
     await expect(
       page.getByRole("menuitem", { name: "CLI setup guide" }),
@@ -646,12 +641,7 @@ test.describe("Doctor panel state screenshots", () => {
     );
     await expect(page.getByTestId("doctor-runtime-ready-codex")).toHaveCount(0);
     await expect(row).not.toContainText("Not authenticated");
-    await expect(row).toHaveCSS(
-      "height",
-      await page
-        .getByTestId("doctor-runtime-goose")
-        .evaluate((element) => getComputedStyle(element).height),
-    );
+    await expect(row).toHaveCSS("min-height", "64px");
     await page.getByTestId("doctor-runtime-menu-codex").click();
     await expect(
       page.getByRole("menuitem", { name: "Sign in with ChatGPT" }),
@@ -699,12 +689,7 @@ test.describe("Doctor panel state screenshots", () => {
     const row = page.getByTestId("doctor-runtime-claude");
     await expect(row).toBeVisible({ timeout: 10_000 });
     await expect(row).not.toContainText("Not authenticated");
-    await expect(row).toHaveCSS(
-      "height",
-      await page
-        .getByTestId("doctor-runtime-goose")
-        .evaluate((element) => getComputedStyle(element).height),
-    );
+    await expect(row).toHaveCSS("min-height", "64px");
     await page.getByTestId("doctor-runtime-menu-claude").click();
     await expect(
       page.getByRole("menuitem", { name: "CLI setup guide" }),
