@@ -182,6 +182,7 @@ export const MessageRow = React.memo(
                 tags.filter((tag) => tag[0] === "emoji"),
                 undefined,
                 true,
+                tags.filter((tag) => tag[0] === "mention"),
               );
             } catch (error) {
               toast.error(
