@@ -295,9 +295,11 @@ function RuntimeStatusChip({ runtime }: { runtime: AcpRuntimeCatalogEntry }) {
  * — for custom harnesses — edit and delete with the blast-radius guard.
  */
 export function HarnessRow({
+  embedded = false,
   resetEpoch,
   runtime,
 }: {
+  embedded?: boolean;
   resetEpoch: number;
   runtime: AcpRuntimeCatalogEntry;
 }) {
@@ -400,7 +402,10 @@ export function HarnessRow({
 
   return (
     <div
-      className="min-h-16 rounded-2xl border border-border/60 bg-muted/20 px-4 py-3.5 text-sm"
+      className={cn(
+        "min-h-16 px-4 py-3.5 text-sm",
+        !embedded && "rounded-2xl border border-border/60 bg-muted/20",
+      )}
       data-testid={`doctor-runtime-${runtime.id}`}
     >
       <div className="min-w-0">
@@ -455,7 +460,8 @@ export function HarnessRow({
 
         {runtime.availability !== "available" ? (
           <div
-            className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground"
+            className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground/70"
+            data-settings-subcopy
             data-testid={`doctor-runtime-guidance-${runtime.id}`}
           >
             <p>{runtime.installHint}</p>

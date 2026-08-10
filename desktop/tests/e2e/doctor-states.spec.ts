@@ -173,7 +173,13 @@ test.describe("Doctor panel state screenshots", () => {
         }),
       ),
     );
-    expect(codexColors).toEqual(gooseColors);
+    expect(codexColors.backgroundColor).toBe(gooseColors.backgroundColor);
+    for (const runtimeId of ["goose", "codex"]) {
+      await expect(page.getByTestId(`doctor-runtime-${runtimeId}`)).toHaveCSS(
+        "border-radius",
+        "0px",
+      );
+    }
     await expect(
       page
         .getByRole("heading", { name: "Agent runtimes", exact: true })

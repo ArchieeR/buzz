@@ -24,6 +24,10 @@
   user-select: none;
 }
 
+.buzz-avatar-framing-slider--compact {
+  height: 32px;
+}
+
 .buzz-avatar-framing-slider:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px hsl(var(--ring) / 0.42);
@@ -50,7 +54,7 @@
 }
 
 .buzz-avatar-framing-slider-hashmark[data-reset="true"] {
-  top: 24px;
+  top: 50%;
   z-index: 3;
   height: 4px;
   width: 4px;
@@ -109,6 +113,8 @@
 }
 
 .buzz-avatar-framing-slider[data-active="true"]
+  .buzz-avatar-framing-slider-handle,
+.buzz-avatar-framing-slider[data-handle-visible="true"]
   .buzz-avatar-framing-slider-handle {
   opacity: 1;
   transform: translate(-50%, -50%) scaleX(1);

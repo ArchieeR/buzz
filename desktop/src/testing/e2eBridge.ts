@@ -12993,6 +12993,8 @@ export function maybeInstallE2eTauriMocks() {
         return activeConfig?.mock?.agentMetricArchiveDefaultEnabled ?? true;
       case "set_prevent_sleep_active":
         return null;
+      case "set_window_vibrancy":
+        return null;
       case "plugin:window|is_fullscreen":
         return false;
       // Settings reads the app version through the app plugin. Without this the
