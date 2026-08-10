@@ -5,7 +5,10 @@ import type { TimelineMessage } from "@/features/messages/types";
 import type { MessageComposerEditTarget } from "@/features/messages/ui/MessageComposer.types";
 import type { UserProfileLookup } from "@/features/profile/lib/identity";
 import { normalizePubkey } from "@/shared/lib/pubkey";
-import { resolveMentionProps } from "@/shared/lib/resolveMentionNames";
+import {
+  getMentionTagPubkey,
+  resolveMentionProps,
+} from "@/shared/lib/resolveMentionNames";
 
 export function resolveEditMentionRefs(
   content: string,
@@ -17,7 +20,7 @@ export function resolveEditMentionRefs(
     tags,
     profiles,
   );
-  return (mentionNames ?? [])
+  const refs = (mentionNames ?? [])
     .filter((displayName) => hasMention(content, displayName))
     .flatMap((displayName) => {
       const pubkey = mentionPubkeysByName?.[displayName.toLowerCase()];
@@ -31,6 +34,23 @@ export function resolveEditMentionRefs(
           ]
         : [];
     });
+  return refs;
+}
+
+function unresolvedEditMentionPubkeys(
+  tags: string[][] | undefined,
+  refs: readonly DraftMentionRef[],
+): string[] {
+  const resolved = new Set(refs.map((ref) => normalizePubkey(ref.pubkey)));
+  return [
+    ...new Set(
+      (tags ?? [])
+        .map(getMentionTagPubkey)
+        .filter((pubkey): pubkey is string => Boolean(pubkey))
+        .map(normalizePubkey)
+        .filter((pubkey) => pubkey && !resolved.has(pubkey)),
+    ),
+  ];
 }
 
 export function buildMessageComposerEditTarget(
@@ -38,17 +58,19 @@ export function buildMessageComposerEditTarget(
   profiles: UserProfileLookup | undefined,
   isAgentPubkey: (pubkey: string) => boolean,
 ): MessageComposerEditTarget {
+  const mentionRefs = resolveEditMentionRefs(
+    message.body,
+    message.tags,
+    profiles,
+    isAgentPubkey,
+  );
   return {
     author: message.author,
     body: message.body,
     id: message.id,
     imetaMedia: imetaMediaFromTags(message.tags),
-    mentionRefs: resolveEditMentionRefs(
-      message.body,
-      message.tags,
-      profiles,
-      isAgentPubkey,
-    ),
+    mentionRefs,
+    unresolvedMentions: unresolvedEditMentionPubkeys(message.tags, mentionRefs),
   };
 }
 

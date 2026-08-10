@@ -19,6 +19,7 @@ export type MessageComposerEditTarget = {
    */
   imetaMedia?: ImetaMedia[];
   mentionRefs?: DraftMentionRef[];
+  unresolvedMentions?: string[];
 };
 
 export type MessageComposerProps = {

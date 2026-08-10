@@ -49,6 +49,7 @@ import { MessageThreadSummaryRow } from "./MessageThreadSummaryRow";
 import { TypingIndicatorRow } from "./TypingIndicatorRow";
 import { UnreadDivider } from "./UnreadDivider";
 import { useComposerHeightPadding } from "./useComposerHeightPadding";
+import { useStableSendToChannel } from "./useStableSendToChannel";
 import { useAnchoredScroll } from "./useAnchoredScroll";
 import { selectDeferredListRenderState } from "@/features/messages/lib/timelineSnapshot";
 
@@ -546,14 +547,14 @@ export function MessageThreadPanel({
         knownAgentPubkeys.has(pubkey) || profiles?.[pubkey]?.isAgent === true,
     );
   }, [currentPubkey, knownAgentPubkeys, profiles, threadHead]);
+  const stableSendToChannel = useStableSendToChannel(
+    channelId,
+    threadHead,
+    onSendToChannel,
+  );
   if (!threadHead) {
     return null;
   }
-  const sendToChannel =
-    onSendToChannel && channelId
-      ? (message: TimelineMessage) =>
-          onSendToChannel(message, threadHead, channelId)
-      : undefined;
   const threadScrollRegion = (
     <AuxiliaryPanelBody
       className="overflow-y-auto overflow-x-hidden overscroll-contain pb-24"
@@ -616,7 +617,7 @@ export function MessageThreadPanel({
                 }
                 onMarkUnread={onMarkUnread}
                 onMarkRead={onMarkRead}
-                onSendToChannel={sendToChannel}
+                onSendToChannel={stableSendToChannel}
                 onToggleReaction={onToggleReaction}
                 onUnfollowThread={
                   onUnfollowThread ? (_msg) => onUnfollowThread() : undefined
@@ -783,7 +784,7 @@ export function MessageThreadPanel({
                         onMarkUnread={onMarkUnread}
                         onMarkRead={onMarkRead}
                         onReply={onSelectReplyTarget}
-                        onSendToChannel={sendToChannel}
+                        onSendToChannel={stableSendToChannel}
                         onToggleReaction={onToggleReaction}
                         profiles={profiles}
                         showDepthGuides={shouldShowThreadBranchGuides}

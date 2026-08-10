@@ -17,6 +17,7 @@ type EditDraft = {
   pendingImeta: ImetaMedia[];
   queuedAttachments: QueuedMediaAttachment[];
   spoileredAttachmentUrls: Set<string>;
+  unresolvedMentions: string[];
 };
 
 type SubmitMessageEditOptions = Omit<EditDraft, "mentionRefs"> & {
@@ -59,6 +60,7 @@ export async function submitMessageEdit({
   save,
   setUploadError,
   spoileredAttachmentUrls,
+  unresolvedMentions,
 }: SubmitMessageEditOptions): Promise<void> {
   const draft: EditDraft = {
     content,
@@ -66,6 +68,7 @@ export async function submitMessageEdit({
     pendingImeta: [...pendingImeta],
     queuedAttachments: [...queuedAttachments],
     spoileredAttachmentUrls: new Set(spoileredAttachmentUrls),
+    unresolvedMentions: [...unresolvedMentions],
   };
   const restoreDraft = () => {
     if (shouldRestoreComposer()) {
@@ -99,7 +102,10 @@ export async function submitMessageEdit({
         mediaTags,
         buildCustomEmojiTags(finalContent, customEmoji),
       ),
-      draft.mentionRefs.map(({ pubkey }) => pubkey),
+      [
+        ...draft.mentionRefs.map(({ pubkey }) => pubkey),
+        ...draft.unresolvedMentions,
+      ],
     );
     if (signal?.aborted) return;
     await save(finalContent, outgoingTags, addedMentionPubkeys, editTargetId);
