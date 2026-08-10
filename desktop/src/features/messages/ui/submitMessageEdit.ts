@@ -7,6 +7,7 @@ import {
   mergeOutgoingTags,
 } from "@/features/messages/lib/imetaMediaMarkdown";
 import { diffAddedMentionPubkeys } from "@/features/messages/lib/threading";
+import { mergeOutgoingTagsWithReferenceMentions } from "@/features/messages/ui/useMentionSendFlow.helpers";
 import { buildCustomEmojiTags } from "@/shared/lib/customEmojiTags";
 import type { CustomEmoji } from "@/shared/lib/remarkCustomEmoji";
 
@@ -93,11 +94,13 @@ export async function submitMessageEdit({
         ),
       ]),
     );
-    const outgoingTags =
+    const outgoingTags = mergeOutgoingTagsWithReferenceMentions(
       mergeOutgoingTags(
         mediaTags,
         buildCustomEmojiTags(finalContent, customEmoji),
-      ) ?? [];
+      ),
+      draft.mentionRefs.map(({ pubkey }) => pubkey),
+    );
     if (signal?.aborted) return;
     await save(finalContent, outgoingTags, addedMentionPubkeys, editTargetId);
   };

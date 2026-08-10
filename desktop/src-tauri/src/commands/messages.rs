@@ -896,6 +896,10 @@ pub struct EditMessageInput {
     // tag, so a typo-fix edit never re-wakes existing mentions.
     #[serde(default)]
     mention_pubkeys: Vec<String>,
+    // Full stable mention identity set selected in the edited composer. These
+    // reference-only tags survive profile-loading gaps and later alias changes.
+    #[serde(default)]
+    mention_tags: Vec<Vec<String>>,
     #[serde(default)]
     suppress_link_previews: bool,
 }
@@ -920,9 +924,12 @@ pub async fn edit_message(
         channel_uuid,
         target_eid,
         trimmed,
-        &input.media_tags,
-        &input.emoji_tags,
-        &mention_refs,
+        events::MessageEditTags {
+            media: &input.media_tags,
+            custom_emoji: &input.emoji_tags,
+            mentions: &mention_refs,
+            mention_refs: &input.mention_tags,
+        },
         input.suppress_link_previews,
     )?;
     submit_event(builder, &state).await?;

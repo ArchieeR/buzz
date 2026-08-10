@@ -355,9 +355,9 @@ function MessageComposerImpl({
       const editableBody = stripImetaMediaLines(editTarget.body, editableImeta);
       setComposerContent(editableBody);
       richText.setContent(editableBody);
-      // Seed the composer's pending-imeta state with the original event's
-      // attachments so they show up in `ComposerAttachments` and the user
-      // can remove existing ones / add new ones before saving.
+      // Seed pending imeta with removable originals before saving the edit.
+      // New attachments can then be added through the same row.
+      mentions.restoreDraftMentionRefs(editTarget.mentionRefs ?? []);
       media.setPendingImeta(editableImeta);
       media.clearQueuedAttachments();
       setSpoileredAttachmentUrls(

@@ -124,6 +124,50 @@ test("edit overlays newly added mention tags without replacing original routing"
   );
 });
 
+test("edit mention snapshot replaces original references, including removals", () => {
+  const original = [
+    ["h", "uuid"],
+    ["mention", "original-mention"],
+  ];
+  const replacement = applyEditTagOverlay(original, [
+    ["buzz:mention-snapshot"],
+    ["mention", "replacement-mention"],
+  ]);
+  assert.deepEqual(
+    replacement.filter((tag) => tag[0] === "mention"),
+    [["mention", "replacement-mention"]],
+  );
+  assert.deepEqual(
+    replacement.filter((tag) => tag[0] === "buzz:mention-snapshot"),
+    [["buzz:mention-snapshot"]],
+  );
+
+  const removed = applyEditTagOverlay(original, [["buzz:mention-snapshot"]]);
+  assert.deepEqual(
+    removed.filter((tag) => tag[0] === "mention"),
+    [],
+  );
+  assert.deepEqual(
+    removed.filter((tag) => tag[0] === "buzz:mention-snapshot"),
+    [["buzz:mention-snapshot"]],
+  );
+});
+
+test("legacy edits preserve original mention references", () => {
+  const original = [
+    ["h", "uuid"],
+    ["mention", "original-mention"],
+  ];
+  const out = applyEditTagOverlay(original, [
+    ["h", "uuid"],
+    ["e", "x"],
+  ]);
+  assert.deepEqual(
+    out.filter((tag) => tag[0] === "mention"),
+    [["mention", "original-mention"]],
+  );
+});
+
 const EMOJI = (shortcode, url) => ["emoji", shortcode, url];
 
 test("edit replaces the original's emoji tags with the edit's set", () => {

@@ -63,6 +63,33 @@ test("edited messages recompute effective mention recipients from the body", () 
   );
 });
 
+test("edited messages preserve snapshotted mention recipients without profiles", () => {
+  assert.deepEqual(
+    getSendToChannelSemantics({
+      body: "Now pinging @Renamed",
+      edited: true,
+      pubkey: SOURCE,
+      tags: [["p", MENTION], ["mention", MENTION], ["buzz:mention-snapshot"]],
+    }),
+    {
+      mentionPubkeys: [MENTION],
+      semanticTags: [["mention", MENTION]],
+    },
+  );
+});
+
+test("an empty edited mention snapshot drops stale original recipients", () => {
+  assert.deepEqual(
+    getSendToChannelSemantics({
+      body: "No longer pinging anyone",
+      edited: true,
+      pubkey: SOURCE,
+      tags: [["p", MENTION], ["buzz:mention-snapshot"]],
+    }),
+    { mentionPubkeys: [], semanticTags: [] },
+  );
+});
+
 test("send-to-channel canonicalizes suppressed link previews", () => {
   const snapshot = ["link-preview", "https://example.com", "snapshot"];
   const suppression = ["link-preview", "none"];

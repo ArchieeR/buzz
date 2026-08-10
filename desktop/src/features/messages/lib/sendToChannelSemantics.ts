@@ -34,11 +34,16 @@ export function getSendToChannelSemantics(
   const mentionPubkeys: string[] = [];
   const effectiveMentionPubkeys = message.edited
     ? new Set(
-        orderMentionPubkeysByText(
-          message.body,
-          resolveMentionProps(message.tags, profiles).mentionPubkeysByName,
-          () => true,
-        ),
+        (message.tags ?? []).some((tag) => tag[0] === "buzz:mention-snapshot")
+          ? (message.tags ?? [])
+              .filter((tag) => tag[0] === "mention")
+              .map((tag) => normalizePubkey(tag[1] ?? ""))
+              .filter((pubkey) => PUBKEY_PATTERN.test(pubkey))
+          : orderMentionPubkeysByText(
+              message.body,
+              resolveMentionProps(message.tags, profiles).mentionPubkeysByName,
+              () => true,
+            ),
       )
     : null;
   const semanticTags: string[][] = [];

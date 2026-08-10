@@ -33,6 +33,7 @@ import {
 } from "@/features/messages/lib/messageGrouping";
 import { orderMentionPubkeysByText } from "@/features/messages/lib/orderMentionPubkeys";
 import { canManageMessageForCurrentUser } from "@/features/messages/lib/canManageMessage";
+import { hasMention } from "@/features/messages/lib/hasMention";
 import { imetaMediaFromTags } from "@/features/messages/lib/imetaMediaMarkdown";
 import { getThreadReference } from "@/features/messages/lib/threading";
 import { normalizePubkey } from "@/shared/lib/pubkey";
@@ -408,6 +409,22 @@ function InboxMessageDetailPane({
         body: editTarget.content,
         id: editTarget.id,
         imetaMedia: imetaMediaFromTags(editTarget.tags),
+        mentionRefs: (editTarget.mentionNames ?? [])
+          .filter((displayName) => hasMention(editTarget.content, displayName))
+          .flatMap((displayName) => {
+            const pubkey =
+              editTarget.mentionPubkeysByName?.[displayName.toLowerCase()];
+            return pubkey
+              ? [
+                  {
+                    displayName,
+                    pubkey,
+                    isAgent:
+                      agentPubkeys?.has(normalizePubkey(pubkey)) === true,
+                  },
+                ]
+              : [];
+          }),
       }
     : null;
   // Explicit sub-message reply wins. Otherwise use the captured default parent
