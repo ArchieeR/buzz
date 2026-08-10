@@ -161,7 +161,7 @@ test.describe("Doctor panel state screenshots", () => {
           ),
       ),
     );
-    expect(rowHeights[2]).toBeGreaterThan(rowHeights[0]);
+    expect(Math.abs(rowHeights[2] - rowHeights[0])).toBeLessThanOrEqual(1);
     const [gooseColors, codexColors] = await Promise.all(
       ["goose", "codex"].map((runtimeId) =>
         page.getByTestId(`doctor-runtime-${runtimeId}`).evaluate((element) => {
@@ -218,14 +218,12 @@ test.describe("Doctor panel state screenshots", () => {
     await expect(page.getByTestId("doctor-runtime-status-codex")).toHaveText(
       "CLI needed",
     );
-    await expect(
-      page.getByTestId("doctor-runtime-guidance-codex"),
-    ).toContainText("Buzz talks to Codex through the Codex CLI.");
-    await expect(
-      page
-        .getByTestId("doctor-runtime-guidance-codex")
-        .getByRole("button", { name: "CLI setup guide" }),
-    ).toBeVisible();
+    await expect(page.getByTestId("doctor-runtime-guidance-codex")).toHaveCount(
+      0,
+    );
+    await expect(page.getByTestId("doctor-runtime-codex")).not.toContainText(
+      "Buzz talks to Codex through the Codex CLI.",
+    );
 
     await runtimeList.scrollIntoViewIfNeeded();
     await waitForAnimations(page);

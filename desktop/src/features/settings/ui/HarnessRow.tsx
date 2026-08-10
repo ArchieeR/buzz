@@ -458,26 +458,6 @@ export function HarnessRow({
           />
         </div>
 
-        {runtime.availability !== "available" ? (
-          <div
-            className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground/70"
-            data-settings-subcopy
-            data-testid={`doctor-runtime-guidance-${runtime.id}`}
-          >
-            <p>{runtime.installHint}</p>
-            {runtime.installInstructionsUrl.trim().length > 0 ? (
-              <button
-                className="inline-flex shrink-0 items-center gap-1 underline-offset-2 hover:text-foreground hover:underline"
-                onClick={() => void openUrl(runtime.installInstructionsUrl)}
-                type="button"
-              >
-                <ExternalLink className="h-4 w-4" />
-                {runtimeInstallGuideLabel(runtime)}
-              </button>
-            ) : null}
-          </div>
-        ) : null}
-
         {runtime.authStatus.status === "config_invalid" ? (
           <p
             className="mt-2 whitespace-pre-line rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-1.5 text-sm text-destructive"
