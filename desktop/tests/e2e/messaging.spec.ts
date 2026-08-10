@@ -1405,6 +1405,16 @@ test("sends a thread message to its parent channel with a root-thread link", asy
     )
     .click();
   const threadPanel = page.getByTestId("message-thread-panel");
+  const threadRootRow = threadPanel.locator(`[data-message-id="${rootId}"]`);
+  const rootMoreActions = threadRootRow.getByTestId(`more-actions-${rootId}`);
+  await rootMoreActions.click({ force: true });
+  await expect(page.getByRole("menu")).toBeVisible();
+  await expect(
+    page.getByRole("menuitem", { name: "Send to channel" }),
+  ).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("menu")).toHaveCount(0);
+
   const ownReplyRow = threadPanel.locator(`[data-message-id="${ownReplyId}"]`);
   await expect(ownReplyRow).toContainText(replySummary);
   await ownReplyRow

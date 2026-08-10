@@ -33,7 +33,7 @@ import {
 } from "@/features/messages/lib/messageGrouping";
 import { orderMentionPubkeysByText } from "@/features/messages/lib/orderMentionPubkeys";
 import { canManageMessageForCurrentUser } from "@/features/messages/lib/canManageMessage";
-import { hasMention } from "@/features/messages/lib/hasMention";
+import { buildEditMentionState } from "@/features/messages/lib/draftMentionRefs";
 import { imetaMediaFromTags } from "@/features/messages/lib/imetaMediaMarkdown";
 import { getThreadReference } from "@/features/messages/lib/threading";
 import { normalizePubkey } from "@/shared/lib/pubkey";
@@ -403,28 +403,21 @@ function InboxMessageDetailPane({
     displayMessages.find((message) => message.id === replyTargetId) ?? null;
   const editTarget =
     displayMessages.find((message) => message.id === editTargetId) ?? null;
+  const editMentionState = editTarget
+    ? buildEditMentionState(
+        editTarget.content,
+        editTarget.tags,
+        profiles,
+        (pubkey) => agentPubkeys?.has(pubkey) === true,
+      )
+    : null;
   const composerEditTarget = editTarget
     ? {
         author: editTarget.authorLabel,
         body: editTarget.content,
         id: editTarget.id,
         imetaMedia: imetaMediaFromTags(editTarget.tags),
-        mentionRefs: (editTarget.mentionNames ?? [])
-          .filter((displayName) => hasMention(editTarget.content, displayName))
-          .flatMap((displayName) => {
-            const pubkey =
-              editTarget.mentionPubkeysByName?.[displayName.toLowerCase()];
-            return pubkey
-              ? [
-                  {
-                    displayName,
-                    pubkey,
-                    isAgent:
-                      agentPubkeys?.has(normalizePubkey(pubkey)) === true,
-                  },
-                ]
-              : [];
-          }),
+        ...editMentionState,
       }
     : null;
   // Explicit sub-message reply wins. Otherwise use the captured default parent

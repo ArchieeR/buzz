@@ -617,7 +617,6 @@ export function MessageThreadPanel({
                 }
                 onMarkUnread={onMarkUnread}
                 onMarkRead={onMarkRead}
-                onSendToChannel={stableSendToChannel}
                 onToggleReaction={onToggleReaction}
                 onUnfollowThread={
                   onUnfollowThread ? (_msg) => onUnfollowThread() : undefined

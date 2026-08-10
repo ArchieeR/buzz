@@ -58,12 +58,34 @@ function unresolvedEditMentionPubkeys(
   ];
 }
 
+export function buildEditMentionState(
+  content: string,
+  tags: string[][] | undefined,
+  profiles: UserProfileLookup | undefined,
+  isAgentPubkey: (pubkey: string) => boolean,
+): Pick<MessageComposerEditTarget, "mentionRefs" | "unresolvedMentionPubkeys"> {
+  const mentionRefs = resolveEditMentionRefs(
+    content,
+    tags,
+    profiles,
+    isAgentPubkey,
+  );
+  return {
+    mentionRefs,
+    unresolvedMentionPubkeys: unresolvedEditMentionPubkeys(
+      content,
+      tags,
+      mentionRefs,
+    ),
+  };
+}
+
 export function buildMessageComposerEditTarget(
   message: TimelineMessage,
   profiles: UserProfileLookup | undefined,
   isAgentPubkey: (pubkey: string) => boolean,
 ): MessageComposerEditTarget {
-  const mentionRefs = resolveEditMentionRefs(
+  const mentionState = buildEditMentionState(
     message.body,
     message.tags,
     profiles,
@@ -74,12 +96,7 @@ export function buildMessageComposerEditTarget(
     body: message.body,
     id: message.id,
     imetaMedia: imetaMediaFromTags(message.tags),
-    mentionRefs,
-    unresolvedMentionPubkeys: unresolvedEditMentionPubkeys(
-      message.body,
-      message.tags,
-      mentionRefs,
-    ),
+    ...mentionState,
   };
 }
 

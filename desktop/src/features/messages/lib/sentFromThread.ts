@@ -7,7 +7,13 @@ export type SentFromThreadReference = {
 };
 
 export function summarizeThreadRoot(content: string): string | null {
-  const normalized = content
+  const withoutControls = Array.from(content, (character) => {
+    const codePoint = character.codePointAt(0) ?? 0;
+    return codePoint <= 0x1f || (codePoint >= 0x7f && codePoint <= 0x9f)
+      ? " "
+      : character;
+  }).join("");
+  const normalized = withoutControls
     .replace(/\|\|[^|]*(?:\|(?!\|)[^|]*)*\|\|/g, " ")
     .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
     .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")

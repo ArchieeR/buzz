@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  buildEditMentionState,
   buildMessageComposerEditTarget,
   resolveEditMentionRefs,
 } from "./draftMentionRefs.ts";
@@ -37,6 +38,21 @@ test("edit mention refs resolve from visible text and loaded profiles", () => {
     () => false,
   );
   assert.deepEqual(target.unresolvedMentionPubkeys, []);
+});
+
+test("shared edit mention state preserves tagged identities while profiles are unavailable", () => {
+  assert.deepEqual(
+    buildEditMentionState(
+      "Please review this, @Alice and @Bob.",
+      [
+        ["p", ALICE],
+        ["mention", BOB],
+      ],
+      undefined,
+      () => false,
+    ),
+    { mentionRefs: [], unresolvedMentionPubkeys: [ALICE, BOB] },
+  );
 });
 
 test("edit target preserves tagged identities while profiles are unavailable", () => {
