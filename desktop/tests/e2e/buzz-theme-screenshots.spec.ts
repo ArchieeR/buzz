@@ -691,7 +691,7 @@ test("settings nav uses Buzz active pill + hover (dark)", async ({ page }) => {
   });
 });
 
-test("prominent active tab switches between strong and subtle selection", async ({
+test("prominent active tab is opt-in and switches selection surfaces", async ({
   page,
 }) => {
   await seedTheme(page, "buzz");
@@ -701,13 +701,10 @@ test("prominent active tab switches between strong and subtle selection", async 
   const root = page.locator("html");
   const activeRow = page.getByTestId("settings-nav-appearance");
   const toggle = page.getByTestId("prominent-active-tab-toggle");
-  await expect(toggle).toBeChecked();
-  await expect(root).toHaveAttribute("data-prominent-active-tab", "");
-  await expect(activeRow).toHaveCSS(
-    "background-color",
-    "rgba(255, 255, 255, 0.82)",
-  );
-  const prominentTextStyle = await activeRow.evaluate((element) => {
+  await expect(toggle).not.toBeChecked();
+  await expect(root).not.toHaveAttribute("data-prominent-active-tab", "");
+  await expect(activeRow).toHaveCSS("background-color", "rgba(0, 0, 0, 0.07)");
+  const subtleTextStyle = await activeRow.evaluate((element) => {
     const styles = getComputedStyle(element);
     return { color: styles.color, fontWeight: styles.fontWeight };
   });
@@ -721,24 +718,7 @@ test("prominent active tab switches between strong and subtle selection", async 
     .toBeNull();
 
   await toggle.click();
-  await expect(toggle).not.toBeChecked();
-  await expect(root).not.toHaveAttribute("data-prominent-active-tab", "");
-  await expect(activeRow).toHaveCSS("background-color", "rgba(0, 0, 0, 0.07)");
-  await expect
-    .poll(() =>
-      page.evaluate(
-        (key) => window.localStorage.getItem(key),
-        PROMINENT_ACTIVE_TAB_STORAGE_KEY,
-      ),
-    )
-    .toBe("false");
-  const subtleTextStyle = await activeRow.evaluate((element) => {
-    const styles = getComputedStyle(element);
-    return { color: styles.color, fontWeight: styles.fontWeight };
-  });
-  expect(subtleTextStyle).toEqual(prominentTextStyle);
-
-  await toggle.click();
+  await expect(toggle).toBeChecked();
   await expect(root).toHaveAttribute("data-prominent-active-tab", "");
   await expect(activeRow).toHaveCSS(
     "background-color",
@@ -752,6 +732,23 @@ test("prominent active tab switches between strong and subtle selection", async 
       ),
     )
     .toBe("true");
+  const prominentTextStyle = await activeRow.evaluate((element) => {
+    const styles = getComputedStyle(element);
+    return { color: styles.color, fontWeight: styles.fontWeight };
+  });
+  expect(prominentTextStyle).toEqual(subtleTextStyle);
+
+  await toggle.click();
+  await expect(root).not.toHaveAttribute("data-prominent-active-tab", "");
+  await expect(activeRow).toHaveCSS("background-color", "rgba(0, 0, 0, 0.07)");
+  await expect
+    .poll(() =>
+      page.evaluate(
+        (key) => window.localStorage.getItem(key),
+        PROMINENT_ACTIVE_TAB_STORAGE_KEY,
+      ),
+    )
+    .toBe("false");
 });
 
 test("prominent channel and direct-message rows share one flat active state", async ({
