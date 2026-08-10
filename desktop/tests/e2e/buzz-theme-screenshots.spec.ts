@@ -1145,6 +1145,51 @@ test("glass background keeps the content panel solid", async ({ page }) => {
     .toBe("false");
 });
 
+test("non-Buzz glass preserves the selected theme sidebar tint", async ({
+  page,
+}) => {
+  await seedTheme(page, "rose-pine-dawn");
+  await page.addInitScript(() => {
+    (window as typeof window & { isTauri?: boolean }).isTauri = true;
+    Object.defineProperty(navigator, "platform", {
+      configurable: true,
+      get: () => "MacIntel",
+    });
+  });
+  await installMockBridge(page);
+  await openAppearance(page, "light");
+
+  const root = page.locator("html");
+  await expect(root).not.toHaveAttribute("data-buzz-sidebar", "");
+  await page.getByTestId("glass-background-toggle").click();
+  await expect(root).toHaveAttribute("data-glass-background", "");
+
+  const tint = await page
+    .locator(".buzz-theme-gradient-layer")
+    .evaluate((element) => {
+      const rootStyles = getComputedStyle(document.documentElement);
+      const sidebar = rootStyles
+        .getPropertyValue("--sidebar-background")
+        .trim();
+      const staticFallback = rootStyles.getPropertyValue("--sidebar").trim();
+      const probe = document.createElement("div");
+      probe.style.backgroundColor = `hsl(${sidebar} / 65%)`;
+      document.body.appendChild(probe);
+      const expected = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+
+      return {
+        actual: getComputedStyle(element).backgroundColor,
+        expected,
+        sidebar,
+        staticFallback,
+      };
+    });
+
+  expect(tint.sidebar).not.toBe(tint.staticFallback);
+  expect(tint.actual).toBe(tint.expected);
+});
+
 test("accent picker reveals/hides when toggling Buzz", async ({ page }) => {
   // Start on a non-Buzz theme so the accent picker is present, then select the
   // Buzz tile — the picker should animate out and unmount. Reselecting a
