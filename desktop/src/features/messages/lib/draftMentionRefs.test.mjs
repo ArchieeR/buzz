@@ -36,7 +36,7 @@ test("edit mention refs resolve from visible text and loaded profiles", () => {
     profiles,
     () => false,
   );
-  assert.deepEqual(target.unresolvedMentions, []);
+  assert.deepEqual(target.unresolvedMentionPubkeys, []);
 });
 
 test("edit target preserves tagged identities while profiles are unavailable", () => {
@@ -50,7 +50,7 @@ test("edit target preserves tagged identities while profiles are unavailable", (
   );
 
   assert.deepEqual(target.mentionRefs, []);
-  assert.deepEqual(target.unresolvedMentions, [ALICE, BOB]);
+  assert.deepEqual(target.unresolvedMentionPubkeys, [ALICE, BOB]);
 });
 
 test("edit target separates resolved refs from identities missing profiles", () => {
@@ -66,5 +66,5 @@ test("edit target separates resolved refs from identities missing profiles", () 
   assert.deepEqual(target.mentionRefs, [
     { displayName: "Alice", isAgent: false, pubkey: ALICE },
   ]);
-  assert.deepEqual(target.unresolvedMentions, [BOB]);
+  assert.deepEqual(target.unresolvedMentionPubkeys, [BOB]);
 });

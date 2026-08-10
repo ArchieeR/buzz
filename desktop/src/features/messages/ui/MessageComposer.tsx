@@ -520,7 +520,7 @@ function MessageComposerImpl({
         customEmoji,
         originalContent: editTargetRef.current.body,
         ownerPubkey: ownerPubkeyRef.current,
-        unresolvedMentions: editTargetRef.current.unresolvedMentions ?? [],
+        editTarget: editTargetRef.current,
         getMentionRefs: mentions.getDraftMentionRefs,
         pendingImeta: media.pendingImetaRef.current,
         queuedAttachments: media.queuedAttachmentsRef.current,

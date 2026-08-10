@@ -38,9 +38,14 @@ export function resolveEditMentionRefs(
 }
 
 function unresolvedEditMentionPubkeys(
+  content: string,
   tags: string[][] | undefined,
   refs: readonly DraftMentionRef[],
 ): string[] {
+  if (!content.includes("@")) {
+    return [];
+  }
+
   const resolved = new Set(refs.map((ref) => normalizePubkey(ref.pubkey)));
   return [
     ...new Set(
@@ -70,7 +75,11 @@ export function buildMessageComposerEditTarget(
     id: message.id,
     imetaMedia: imetaMediaFromTags(message.tags),
     mentionRefs,
-    unresolvedMentions: unresolvedEditMentionPubkeys(message.tags, mentionRefs),
+    unresolvedMentionPubkeys: unresolvedEditMentionPubkeys(
+      message.body,
+      message.tags,
+      mentionRefs,
+    ),
   };
 }
 

@@ -1,6 +1,8 @@
 import type { QueuedMediaAttachment } from "@/features/messages/lib/backgroundMediaUploadStore";
 import { enqueueBackgroundMediaUpload } from "@/features/messages/lib/backgroundMediaUploadStore";
+import { hasMention } from "@/features/messages/lib/hasMention";
 import type { DraftMentionRef } from "@/features/messages/lib/useDrafts";
+import type { MessageComposerEditTarget } from "@/features/messages/ui/MessageComposer.types";
 import {
   buildOutgoingMessage,
   type ImetaMedia,
@@ -17,15 +19,22 @@ type EditDraft = {
   pendingImeta: ImetaMedia[];
   queuedAttachments: QueuedMediaAttachment[];
   spoileredAttachmentUrls: Set<string>;
-  unresolvedMentions: string[];
+  unresolvedMentionPubkeys: string[];
 };
 
-type SubmitMessageEditOptions = Omit<EditDraft, "mentionRefs"> & {
+type SubmitMessageEditOptions = Omit<
+  EditDraft,
+  "mentionRefs" | "unresolvedMentionPubkeys"
+> & {
   clearComposer: () => void;
   customEmoji: ReadonlyArray<CustomEmoji>;
   extractMentionPubkeys: (content: string) => string[];
   getMentionRefs: (content: string) => DraftMentionRef[];
   editTargetId: string;
+  editTarget: Pick<
+    MessageComposerEditTarget,
+    "mentionRefs" | "unresolvedMentionPubkeys"
+  >;
   originalContent: string;
   ownerPubkey: string | null;
   restoreComposer: (draft: EditDraft) => void;
@@ -41,12 +50,12 @@ type SubmitMessageEditOptions = Omit<EditDraft, "mentionRefs"> & {
   setUploadError: (message: string) => void;
 };
 
-/** Clear an edited message immediately, then upload and save captured state. */
 export async function submitMessageEdit({
   clearComposer,
   content,
   customEmoji,
   editTargetId,
+  editTarget,
   extractMentionPubkeys,
   getMentionRefs,
   originalContent,
@@ -60,15 +69,20 @@ export async function submitMessageEdit({
   save,
   setUploadError,
   spoileredAttachmentUrls,
-  unresolvedMentions,
 }: SubmitMessageEditOptions): Promise<void> {
+  const currentMentionRefs = editTarget.mentionRefs ?? [];
   const draft: EditDraft = {
     content,
-    mentionRefs: getMentionRefs(content),
+    mentionRefs: [
+      ...getMentionRefs(content),
+      ...currentMentionRefs.filter((ref) =>
+        hasMention(content, ref.displayName),
+      ),
+    ],
     pendingImeta: [...pendingImeta],
     queuedAttachments: [...queuedAttachments],
     spoileredAttachmentUrls: new Set(spoileredAttachmentUrls),
-    unresolvedMentions: [...unresolvedMentions],
+    unresolvedMentionPubkeys: [...(editTarget.unresolvedMentionPubkeys ?? [])],
   };
   const restoreDraft = () => {
     if (shouldRestoreComposer()) {
@@ -104,7 +118,7 @@ export async function submitMessageEdit({
       ),
       [
         ...draft.mentionRefs.map(({ pubkey }) => pubkey),
-        ...draft.unresolvedMentions,
+        ...draft.unresolvedMentionPubkeys,
       ],
     );
     if (signal?.aborted) return;
