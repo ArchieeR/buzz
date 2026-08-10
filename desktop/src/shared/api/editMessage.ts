@@ -19,7 +19,7 @@ export async function editMessage(
       emojiTags: emojiTags ?? [],
       mentionPubkeys: mentionPubkeys ?? [],
       suppressLinkPreviews: suppressLinkPreviews ?? false,
-      mentionTags: mentionTags ?? [],
+      mentionTags: mentionTags ?? null,
     },
   });
 }

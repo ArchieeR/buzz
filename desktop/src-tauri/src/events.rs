@@ -351,7 +351,7 @@ pub struct MessageEditTags<'a> {
     pub media: &'a [Vec<String>],
     pub custom_emoji: &'a [Vec<String>],
     pub mentions: &'a [&'a str],
-    pub mention_refs: &'a [Vec<String>],
+    pub mention_refs: Option<&'a [Vec<String>]>,
 }
 
 /// Kind 40003 — edit a message with full content, media, emoji, mentions,
@@ -371,8 +371,10 @@ pub fn build_message_edit(
     tags.extend(mention_tags(edit_tags.mentions)?);
     imeta_tags(edit_tags.media, &mut tags)?;
     emoji_tags(edit_tags.custom_emoji, &mut tags)?;
-    mention_reference_tags(edit_tags.mention_refs, &mut tags)?;
-    tags.push(tag(vec!["buzz:mention-snapshot"])?);
+    if let Some(mention_refs) = edit_tags.mention_refs {
+        mention_reference_tags(mention_refs, &mut tags)?;
+        tags.push(tag(vec!["buzz:mention-snapshot"])?);
+    }
     if suppress_link_previews {
         tags.push(tag(vec!["link-preview", "none"])?);
     }
@@ -883,23 +885,18 @@ mod tests {
         assert_eq!(event.pubkey.to_hex(), TARGET_HEX);
     }
 
-    // ── build_message_edit `p`-tag emission (lane 8ace8eed) ──────────────
-    //
-    // The composer diffs the edited body's mentions against the original and
-    // hands `build_message_edit` only the *newly added* pubkeys. These tests
-    // pin the builder's contract given that contract: emit a `p` per added
-    // mention (deduped, lowercased), and none when the added set is empty
-    // (typo-fix edit) — so an unchanged mention set re-wakes nobody.
-
     const CH_ID: &str = "11111111-1111-4111-8111-111111111111";
     const ALICE_HEX: &str = "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
     const BOB_HEX: &str = "c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5";
 
     fn edit_tags(mentions: &[&str]) -> Vec<Vec<String>> {
-        edit_tags_with_refs(mentions, &[])
+        edit_tags_with_refs(mentions, Some(&[]))
     }
 
-    fn edit_tags_with_refs(mentions: &[&str], mention_refs: &[Vec<String>]) -> Vec<Vec<String>> {
+    fn edit_tags_with_refs(
+        mentions: &[&str],
+        mention_refs: Option<&[Vec<String>]>,
+    ) -> Vec<Vec<String>> {
         let channel = Uuid::parse_str(CH_ID).unwrap();
         let target =
             EventId::from_hex("d24da132115ca0a46233cf4c2ad8338fbf914250cbcaa9181a6dd59533cb5ac1")
@@ -930,7 +927,6 @@ mod tests {
         let tags = edit_tags(&[ALICE_HEX]);
         assert_eq!(tags[0][0], "h");
         assert_eq!(tags[1][0], "e");
-        // The `p` tag rides right after the `e` tag (insertion order).
         assert_eq!(tags[2], vec!["p".to_string(), ALICE_HEX.to_string()]);
     }
 
@@ -949,7 +945,7 @@ mod tests {
 
     #[test]
     fn edit_emits_full_mention_reference_snapshot() {
-        let tags = edit_tags_with_refs(&[], &[vec!["mention".into(), ALICE_HEX.into()]]);
+        let tags = edit_tags_with_refs(&[], Some(&[vec!["mention".into(), ALICE_HEX.into()]]));
         assert!(
             tags.iter().any(|tag| tag == &["mention", ALICE_HEX]),
             "stable mention reference must be present: {tags:?}"
@@ -962,7 +958,7 @@ mod tests {
 
     #[test]
     fn empty_edit_mention_snapshot_is_explicit() {
-        let tags = edit_tags_with_refs(&[], &[]);
+        let tags = edit_tags_with_refs(&[], Some(&[]));
         assert!(
             tags.iter().any(|tag| tag == &["buzz:mention-snapshot"]),
             "empty snapshot must still clear stale references: {tags:?}"
@@ -970,6 +966,17 @@ mod tests {
         assert!(!tags
             .iter()
             .any(|tag| tag.first().map(String::as_str) == Some("mention")));
+    }
+
+    #[test]
+    fn partial_edit_omits_mention_snapshot() {
+        let tags = edit_tags_with_refs(&[], None);
+        assert!(!tags
+            .iter()
+            .any(|tag| tag.first().map(String::as_str) == Some("mention")));
+        assert!(!tags
+            .iter()
+            .any(|tag| tag.first().map(String::as_str) == Some("buzz:mention-snapshot")));
     }
 
     #[test]

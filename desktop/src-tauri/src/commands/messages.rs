@@ -896,10 +896,10 @@ pub struct EditMessageInput {
     // tag, so a typo-fix edit never re-wakes existing mentions.
     #[serde(default)]
     mention_pubkeys: Vec<String>,
-    // Full stable mention identity set selected in the edited composer. These
-    // reference-only tags survive profile-loading gaps and later alias changes.
-    #[serde(default)]
-    mention_tags: Vec<Vec<String>>,
+    // Full stable mention identity set selected in the edited composer. `None`
+    // means a partial edit that must preserve the existing snapshot; `Some`,
+    // including an empty set, authoritatively replaces it.
+    mention_tags: Option<Vec<Vec<String>>>,
     #[serde(default)]
     suppress_link_previews: bool,
 }
@@ -928,7 +928,7 @@ pub async fn edit_message(
             media: &input.media_tags,
             custom_emoji: &input.emoji_tags,
             mentions: &mention_refs,
-            mention_refs: &input.mention_tags,
+            mention_refs: input.mention_tags.as_deref(),
         },
         input.suppress_link_previews,
     )?;
