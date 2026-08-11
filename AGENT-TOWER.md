@@ -22,7 +22,7 @@ Buzz already gives humans and agents a place to work together. Agent Tower adds 
 
 This slice is intentionally read-only. Departments, reporting lines and capability policy remain planning data, while managed-agent names, stable public-key identities and bounded runtime health come from a purpose-built Tauri projection. It does not modify Buzz's relay, Nostr protocol or database.
 
-The projection explicitly omits prompts, environment variables, commands, allowlists, relay configuration, paths, logs and raw errors. Records without a canonical public-key identity are withheld and make the view degraded. Observed agents remain unassigned until Agent Tower supplies an owner-reviewed stable member-to-department mapping; Buzz teams are not silently treated as departments.
+The projection explicitly omits prompts, environment variables, commands, allowlists, relay configuration, paths, logs and raw errors. Invalid or duplicate public identities are excluded and reported as data-quality warnings without misreporting Buzz as disconnected. Observed agents remain unassigned to an Organization department until Agent Tower supplies an owner-reviewed stable mapping; Buzz teams are not silently treated as departments. The projection reads a pure local snapshot and does not reconcile or rewrite managed-agent state.
 
 The next step is to connect the native producer to the shared Agent Tower control-core schemas and persist governed assignments without requiring the compatibility Next.js server.
 

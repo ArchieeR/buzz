@@ -265,6 +265,8 @@ type E2eConfig = {
       mcp?: MockCommandAvailability;
     };
     managedAgents?: MockManagedAgentSeed[];
+    /** Reject successive Organization fact reads, then resume. */
+    organizationFactsErrors?: (string | null)[];
     /** Result returned by the mocked `add_agent_to_huddle` command. */
     addAgentToHuddleResult?: {
       ephemeral_added: boolean;
@@ -7828,11 +7830,33 @@ async function handleListManagedAgents(
 async function handleListOrganizationManagedAgents(
   config: E2eConfig | undefined,
 ) {
+  const configuredError = config?.mock?.organizationFactsErrors?.shift();
+  if (configuredError) throw new Error(configuredError);
   const agents = await handleListManagedAgents(config);
+  const validAgents: Array<{ agent: RawManagedAgent; pubkey: string }> = [];
+  let rejectedCount = 0;
+  for (const agent of agents) {
+    const pubkey = agent.pubkey.toLowerCase();
+    if (/^[0-9a-f]{64}$/.test(pubkey)) {
+      validAgents.push({ agent, pubkey });
+    } else {
+      rejectedCount += 1;
+    }
+  }
+  const identityCounts = new Map<string, number>();
+  for (const { pubkey } of validAgents) {
+    identityCounts.set(pubkey, (identityCounts.get(pubkey) ?? 0) + 1);
+  }
+  const projectedAgents = validAgents.filter(({ pubkey }) => {
+    if (identityCounts.get(pubkey) === 1) return true;
+    rejectedCount += 1;
+    return false;
+  });
+
   return {
-    agents: agents.map((agent) => ({
-      id: `buzz-agent:${agent.pubkey}`,
-      pubkey: agent.pubkey,
+    agents: projectedAgents.map(({ agent, pubkey }) => ({
+      id: `buzz-agent:${pubkey}`,
+      pubkey,
       display_name: agent.name,
       persona_id: agent.persona_id,
       team_id: null,
@@ -7850,7 +7874,7 @@ async function handleListOrganizationManagedAgents(
       sender_policy: agent.respond_to ?? "owner-only",
       updated_at: agent.updated_at,
     })),
-    rejected_count: 0,
+    rejected_count: rejectedCount,
   };
 }
 

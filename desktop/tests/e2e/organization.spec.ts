@@ -2,7 +2,13 @@ import { expect, test } from "@playwright/test";
 
 import { installMockBridge } from "../helpers/bridge";
 
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page }, testInfo) => {
+  if (testInfo.title.includes("reports disconnection")) {
+    await installMockBridge(page, {
+      organizationFactsErrors: ["mock adapter unavailable", null],
+    });
+    return;
+  }
   await installMockBridge(page, {
     managedAgents: [
       {
@@ -10,8 +16,30 @@ test.beforeEach(async ({ page }) => {
         pubkey: "1".repeat(64),
         status: "running",
       },
+      {
+        name: "Legacy record",
+        pubkey: "legacy-record",
+        status: "stopped",
+      },
     ],
   });
+});
+
+test("organization reports disconnection and retries without hiding planning data", async ({
+  page,
+}) => {
+  await page.goto("/#/organization");
+
+  const retry = page.getByRole("button", {
+    name: /Buzz disconnected.*Retry now/,
+  });
+  await expect(retry).toBeVisible();
+  await expect(page.getByText("agent facts unavailable")).toBeVisible();
+  await expect(page.getByTestId("organization-view")).toBeVisible();
+
+  await retry.click();
+  await expect(page.getByText("Buzz live", { exact: true })).toBeVisible();
+  await expect(retry).not.toBeVisible();
 });
 
 test("organization sidebar route opens the chart and preserves department detail in the URL", async ({
@@ -26,13 +54,19 @@ test("organization sidebar route opens the chart and preserves department detail
     page.getByRole("heading", { name: "Organization" }),
   ).toBeVisible();
   await expect(page.getByText("Buzz live", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("· 1 identity excluded", { exact: true }),
+  ).toBeVisible();
   const observedAgents = page.getByRole("region", {
-    name: "Observed, unassigned",
+    name: "Unassigned to departments",
   });
   await expect(observedAgents).toBeVisible();
   await expect(
-    observedAgents.getByText("System Manager", { exact: true }),
+    observedAgents.getByLabel(
+      "System Manager, running, unassigned to an Organization department",
+    ),
   ).toBeVisible();
+  await expect(observedAgents).toContainText("running");
   await page.screenshot({
     path: testInfo.outputPath("organization-view.png"),
   });

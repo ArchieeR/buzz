@@ -9,34 +9,45 @@ export const organizationManagedAgentsQueryKey = [
   "organization-managed-agents",
 ] as const;
 
-export type OrganizationFactsState = "connecting" | "live" | "degraded";
+export type OrganizationSourceState = "connecting" | "live" | "disconnected";
 
-export function getOrganizationFactsState({
-  agents,
+export function getOrganizationSourceState({
   isError,
   isPending,
+}: {
+  isError: boolean;
+  isPending: boolean;
+}): OrganizationSourceState {
+  if (isPending) return "connecting";
+  return isError ? "disconnected" : "live";
+}
+
+export function getOrganizationFactWarnings({
+  agents,
   rejectedCount,
 }: {
   agents: BuzzOrganizationAgentFact[];
-  isError: boolean;
-  isPending: boolean;
   rejectedCount: number;
-}): OrganizationFactsState {
-  if (isPending) return "connecting";
-  if (
-    isError ||
-    rejectedCount > 0 ||
-    agents.some(
-      (agent) =>
-        agent.needsRestart ||
-        agent.personaOrphaned ||
-        agent.personaOutOfDate ||
-        agent.lastErrorCode !== undefined,
-    )
-  ) {
-    return "degraded";
+}): string[] {
+  const warnings: string[] = [];
+  if (rejectedCount > 0) {
+    warnings.push(
+      `${rejectedCount} ${rejectedCount === 1 ? "identity" : "identities"} excluded`,
+    );
   }
-  return "live";
+  const attentionCount = agents.filter(
+    (agent) =>
+      agent.needsRestart ||
+      agent.personaOrphaned ||
+      agent.personaOutOfDate ||
+      agent.lastErrorCode !== undefined,
+  ).length;
+  if (attentionCount > 0) {
+    warnings.push(
+      `${attentionCount} ${attentionCount === 1 ? "agent needs" : "agents need"} attention`,
+    );
+  }
+  return warnings;
 }
 
 export function useOrganizationFactsQuery() {
@@ -45,19 +56,21 @@ export function useOrganizationFactsQuery() {
     queryFn: listOrganizationManagedAgents,
     staleTime: 5_000,
     refetchInterval: 5_000,
+    retry: false,
   });
   const agents = query.data?.agents ?? [];
   const rejectedCount = query.data?.rejectedCount ?? 0;
+  const warnings = getOrganizationFactWarnings({ agents, rejectedCount });
 
   return {
     ...query,
     agents,
     rejectedCount,
-    state: getOrganizationFactsState({
-      agents,
+    sourceState: getOrganizationSourceState({
       isError: query.isError,
       isPending: query.isPending,
-      rejectedCount,
     }),
+    hasStaleData: query.isError && query.data !== undefined,
+    warnings,
   };
 }
