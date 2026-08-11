@@ -5,7 +5,10 @@ import {
   normalizeOrganizationManagedAgentFact,
   normalizeOrganizationManagedAgentFacts,
 } from "./organizationFacts.ts";
-import { getOrganizationFactsState } from "./useOrganizationFactsQuery.ts";
+import {
+  getOrganizationFactWarnings,
+  getOrganizationSourceState,
+} from "./useOrganizationFactsQuery.ts";
 
 const pubkey = "a".repeat(64);
 
@@ -78,14 +81,12 @@ test("keeps the backend rejected-record count visible", () => {
     rejected_count: 2,
   });
   assert.deepEqual(result, { agents: [], rejectedCount: 2 });
-  assert.equal(
-    getOrganizationFactsState({
+  assert.deepEqual(
+    getOrganizationFactWarnings({
       agents: [],
-      isError: false,
-      isPending: false,
       rejectedCount: result.rejectedCount,
     }),
-    "degraded",
+    ["2 identities excluded"],
   );
 });
 
@@ -111,13 +112,23 @@ test("marks drifted managed-agent facts as degraded", () => {
     updated_at: "2026-08-11T00:00:00Z",
   });
 
+  assert.deepEqual(
+    getOrganizationFactWarnings({ agents: [agent], rejectedCount: 0 }),
+    ["1 agent needs attention"],
+  );
+});
+
+test("keeps adapter availability separate from record warnings", () => {
   assert.equal(
-    getOrganizationFactsState({
-      agents: [agent],
-      isError: false,
-      isPending: false,
-      rejectedCount: 0,
-    }),
-    "degraded",
+    getOrganizationSourceState({ isError: false, isPending: true }),
+    "connecting",
+  );
+  assert.equal(
+    getOrganizationSourceState({ isError: false, isPending: false }),
+    "live",
+  );
+  assert.equal(
+    getOrganizationSourceState({ isError: true, isPending: false }),
+    "disconnected",
   );
 });

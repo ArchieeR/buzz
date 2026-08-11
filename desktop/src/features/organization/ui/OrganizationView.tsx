@@ -23,7 +23,7 @@ import {
   type OrganizationDepartmentId,
   type OrganizationRole,
 } from "@/features/organization/organizationModel";
-import type { OrganizationFactsState } from "@/features/organization/useOrganizationFactsQuery";
+import type { OrganizationSourceState } from "@/features/organization/useOrganizationFactsQuery";
 import { OrganizationDepartmentDialog } from "@/features/organization/ui/OrganizationDepartmentDialog";
 import { topChromeInset } from "@/shared/layout/chromeLayout";
 import { cn } from "@/shared/lib/cn";
@@ -188,14 +188,18 @@ function Connector({ className }: { className?: string }) {
 
 export function OrganizationView({
   agents,
-  factsState,
-  rejectedCount,
+  hasStaleData,
+  onRetry,
+  sourceState,
+  warnings,
   selectedDepartmentId,
   onSelectDepartment,
 }: {
   agents: BuzzOrganizationAgentFact[];
-  factsState: OrganizationFactsState;
-  rejectedCount: number;
+  hasStaleData: boolean;
+  onRetry: () => void;
+  sourceState: OrganizationSourceState;
+  warnings: string[];
   selectedDepartmentId?: OrganizationDepartmentId;
   onSelectDepartment: (id?: OrganizationDepartmentId) => void;
 }) {
@@ -224,29 +228,51 @@ export function OrganizationView({
         <main className="mx-auto flex min-h-full w-full max-w-7xl flex-col px-4 pb-5 pt-4 sm:px-6 sm:pt-5">
           <PageHeader
             action={
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <span className="hidden text-xs text-muted-foreground sm:inline">
-                  6 departments · 30 planned seats · {agents.length} observed ·
-                  0 assigned
-                  {rejectedCount > 0 ? ` · ${rejectedCount} withheld` : null}
+                  6 departments ·{" "}
+                  {sourceState === "disconnected" && agents.length === 0
+                    ? "agent facts unavailable"
+                    : `${agents.length} observed`}{" "}
+                  · 0 assigned{hasStaleData ? " · last known facts" : null}
+                  {warnings.length > 0 ? (
+                    <span
+                      aria-label={warnings.join(". ")}
+                      className="text-amber-700 dark:text-amber-300"
+                      role="status"
+                    >
+                      {` · ${warnings.length === 1 ? warnings[0] : `${warnings.length} data issues`}`}
+                    </span>
+                  ) : null}
                 </span>
-                <Badge className="gap-1.5" variant="outline">
-                  <CircleDot
-                    className={cn(
-                      "h-3 w-3",
-                      factsState === "live"
-                        ? "text-emerald-500"
-                        : factsState === "degraded"
-                          ? "text-destructive"
+                {sourceState === "disconnected" ? (
+                  <button
+                    aria-label="Buzz disconnected. Agent facts are unavailable; the planning chart remains visible. Retry now."
+                    className="inline-flex h-6 items-center gap-1.5 rounded-full border border-destructive/50 px-2.5 text-xs font-medium text-destructive hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    onClick={onRetry}
+                    type="button"
+                  >
+                    <CircleDot className="h-3 w-3" />
+                    Buzz disconnected · Retry
+                  </button>
+                ) : (
+                  <Badge
+                    aria-live="polite"
+                    className="gap-1.5"
+                    role="status"
+                    variant="outline"
+                  >
+                    <CircleDot
+                      className={cn(
+                        "h-3 w-3",
+                        sourceState === "live"
+                          ? "text-emerald-500"
                           : "text-amber-500",
-                    )}
-                  />
-                  {factsState === "live"
-                    ? "Buzz live"
-                    : factsState === "degraded"
-                      ? "Buzz degraded"
-                      : "Connecting"}
-                </Badge>
+                      )}
+                    />
+                    {sourceState === "live" ? "Buzz live" : "Connecting"}
+                  </Badge>
+                )}
               </div>
             }
             description={organizationFixture.summary}
@@ -350,18 +376,22 @@ export function OrganizationView({
                         className="shrink-0 text-xs font-medium text-muted-foreground"
                         id="organization-unassigned-heading"
                       >
-                        Observed, unassigned
+                        Unassigned to departments
                       </h2>
                       <div className="flex min-w-0 gap-1.5 overflow-x-auto">
                         {agents.map((agent) => (
                           <Badge
+                            aria-label={`${agent.displayName}, ${agent.status}, unassigned to an Organization department`}
                             className="shrink-0 gap-1.5"
                             key={agent.id}
-                            title={`${agent.id} · ${agent.status}`}
+                            title={agent.id}
                             variant="secondary"
                           >
-                            <Bot className="h-3 w-3" />
+                            <Bot aria-hidden="true" className="h-3 w-3" />
                             {agent.displayName}
+                            <span className="text-muted-foreground">
+                              · {agent.status}
+                            </span>
                           </Badge>
                         ))}
                       </div>

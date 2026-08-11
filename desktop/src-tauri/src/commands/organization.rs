@@ -1,9 +1,13 @@
 use std::collections::HashMap;
 use tauri::AppHandle;
 
-use crate::managed_agents::{BackendKind, ManagedAgentSummary, RespondTo};
-
-use super::agents::list_managed_agents;
+use crate::{
+    app_state::AppState,
+    managed_agents::{
+        build_managed_agent_summary, load_global_agent_config, load_managed_agents, load_personas,
+        BackendKind, ManagedAgentSummary, RespondTo,
+    },
+};
 
 /// Safe, purpose-built managed-agent projection for the Organization surface.
 ///
@@ -105,11 +109,43 @@ fn project_organization_agents(
     }
 }
 
+async fn read_organization_managed_agent_summaries(
+    app: AppHandle,
+) -> Result<Vec<ManagedAgentSummary>, String> {
+    use tauri::Manager;
+
+    tokio::task::spawn_blocking(move || {
+        let state = app.state::<AppState>();
+        let _store_guard = state
+            .managed_agents_store_lock
+            .lock()
+            .map_err(|error| error.to_string())?;
+        let records = load_managed_agents(&app)?;
+        let runtimes = state
+            .managed_agent_processes
+            .lock()
+            .map_err(|error| error.to_string())?;
+        let personas = load_personas(&app).unwrap_or_default();
+        let global_config = load_global_agent_config(&app).unwrap_or_default();
+
+        records
+            .iter()
+            .map(|record| {
+                build_managed_agent_summary(&app, record, &runtimes, &personas, &global_config)
+            })
+            .collect()
+    })
+    .await
+    .map_err(|error| format!("spawn_blocking failed: {error}"))?
+}
+
 #[tauri::command]
 pub async fn list_organization_managed_agents(
     app: AppHandle,
 ) -> Result<OrganizationManagedAgentFacts, String> {
-    Ok(project_organization_agents(list_managed_agents(app).await?))
+    Ok(project_organization_agents(
+        read_organization_managed_agent_summaries(app).await?,
+    ))
 }
 
 #[cfg(test)]
