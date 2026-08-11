@@ -1,6 +1,7 @@
-import { Activity, Bot, FolderGit2, Inbox, Zap } from "lucide-react";
+import { Activity, Bot, Building2, FolderGit2, Inbox, Zap } from "lucide-react";
 
 import { TopbarSearch } from "@/features/search/ui/TopbarSearch";
+import type { AppView } from "@/shared/navigation/appView";
 import { FeatureGate } from "@/shared/features";
 import type { Channel, SearchHit } from "@/shared/api/types";
 import {
@@ -12,14 +13,7 @@ import {
 } from "@/shared/ui/sidebar";
 import { SidebarMenuLabel } from "@/shared/ui/sidebar-menu-label";
 
-type SidebarSelectedView =
-  | "home"
-  | "channel"
-  | "messages"
-  | "agents"
-  | "workflows"
-  | "pulse"
-  | "projects";
+type SidebarSelectedView = AppView;
 
 type AppSidebarPinnedHeaderProps = {
   channelLabels: Record<string, string>;
@@ -39,6 +33,7 @@ type AppSidebarPrimaryMenuProps = {
   homeBadgeCount: number;
   onSelectAgents: () => void;
   onSelectHome: () => void;
+  onSelectOrganization: () => void;
   onSelectProjects: () => void;
   onSelectPulse: () => void;
   onSelectWorkflows: () => void;
@@ -84,6 +79,7 @@ export function AppSidebarPrimaryMenu({
   homeBadgeCount,
   onSelectAgents,
   onSelectHome,
+  onSelectOrganization,
   onSelectProjects,
   onSelectPulse,
   onSelectWorkflows,
@@ -152,6 +148,31 @@ export function AppSidebarPrimaryMenu({
             </SidebarMenuButton>
           </SidebarMenuItem>
         </FeatureGate>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            className="data-[active=true]:font-normal"
+            data-testid="open-organization-view"
+            isActive={selectedView === "organization"}
+            onClick={onSelectOrganization}
+            tooltip="Organization"
+            type="button"
+          >
+            <Building2
+              className={
+                selectedView !== "organization"
+                  ? "h-4 w-4 opacity-80"
+                  : "h-4 w-4"
+              }
+            />
+            <SidebarMenuLabel
+              className={
+                selectedView !== "organization" ? "opacity-80" : undefined
+              }
+            >
+              Organization
+            </SidebarMenuLabel>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
         <SidebarMenuItem>
           <SidebarMenuButton
             className="data-[active=true]:font-normal"

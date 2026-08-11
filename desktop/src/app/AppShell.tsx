@@ -138,6 +138,7 @@ export function AppShell() {
     goChannel,
     goHome,
     goNewMessage,
+    goOrganization,
     goProjects,
     goPulse,
     goSettings,
@@ -274,7 +275,6 @@ export function AppShell() {
       return;
     }
     hasRestoredCommunityDestinationRef.current = true;
-
     // Restoration belongs to an explicit community transition. Cold boot and
     // reconnect remounts must preserve the route the user explicitly opened.
     if (!consumePendingCommunityRestore(activeCommunityId)) {
@@ -899,6 +899,7 @@ export function AppShell() {
                         searchChannels={channels}
                         searchFocusRequest={searchFocusRequest}
                         onSelectHome={() => void goHome()}
+                        onSelectOrganization={() => void goOrganization()}
                         onSelectProjects={() => void goProjects()}
                         onSelectPulse={() => void goPulse()}
                         onSelectSettings={handleOpenSettings}

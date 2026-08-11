@@ -68,6 +68,17 @@ export function useAppNavigation() {
     [commitNavigation],
   );
 
+  const goOrganization = React.useCallback(
+    (behavior?: NavigationBehavior) =>
+      commitNavigation(
+        {
+          to: "/organization",
+        },
+        behavior,
+      ),
+    [commitNavigation],
+  );
+
   const goPulse = React.useCallback(
     (behavior?: NavigationBehavior) =>
       commitNavigation(
@@ -319,6 +330,7 @@ export function useAppNavigation() {
     goForumPost,
     goHome,
     goNewMessage,
+    goOrganization,
     goProject,
     goProjects,
     goPulse,
