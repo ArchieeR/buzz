@@ -17,6 +17,7 @@ type SidebarSelectedView = AppView;
 
 type AppSidebarPinnedHeaderProps = {
   channelLabels: Record<string, string>;
+  currentChannelId?: string | null;
   currentPubkey?: string;
   onBrowseChannels?: () => void;
   onCreateAgent: () => void;
@@ -26,6 +27,7 @@ type AppSidebarPinnedHeaderProps = {
   onSelectChannel: (channelId: string) => void;
   searchChannels: Channel[];
   searchFocusRequest: number;
+  scopeSearchFocusRequest: number;
   suggestionChannels: Channel[];
 };
 
@@ -42,6 +44,7 @@ type AppSidebarPrimaryMenuProps = {
 
 export function AppSidebarPinnedHeader({
   channelLabels,
+  currentChannelId,
   currentPubkey,
   onBrowseChannels,
   onCreateAgent,
@@ -51,6 +54,7 @@ export function AppSidebarPinnedHeader({
   onSelectChannel,
   searchChannels,
   searchFocusRequest,
+  scopeSearchFocusRequest,
   suggestionChannels,
 }: AppSidebarPinnedHeaderProps) {
   return (
@@ -61,6 +65,7 @@ export function AppSidebarPinnedHeader({
       <TopbarSearch
         channelLabels={channelLabels}
         channels={searchChannels}
+        currentChannelId={currentChannelId}
         currentPubkey={currentPubkey}
         focusRequest={searchFocusRequest}
         onOpenChannel={onSelectChannel}
@@ -69,6 +74,7 @@ export function AppSidebarPinnedHeader({
         onBrowseChannels={onBrowseChannels}
         onCreateAgent={onCreateAgent}
         onCreateChannel={onCreateChannel}
+        scopeFocusRequest={scopeSearchFocusRequest}
         suggestionChannels={suggestionChannels}
       />
     </div>
