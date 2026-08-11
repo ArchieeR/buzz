@@ -7825,6 +7825,35 @@ async function handleListManagedAgents(
   return mockManagedAgents.map(cloneManagedAgent);
 }
 
+async function handleListOrganizationManagedAgents(
+  config: E2eConfig | undefined,
+) {
+  const agents = await handleListManagedAgents(config);
+  return {
+    agents: agents.map((agent) => ({
+      id: `buzz-agent:${agent.pubkey}`,
+      pubkey: agent.pubkey,
+      display_name: agent.name,
+      persona_id: agent.persona_id,
+      team_id: null,
+      runtime: agent.runtime,
+      status: agent.status,
+      backend: agent.backend.type === "provider" ? "provider" : "local",
+      provider: agent.provider,
+      model: agent.model,
+      parallelism: agent.parallelism,
+      start_on_app_launch: agent.start_on_app_launch,
+      needs_restart: agent.needs_restart,
+      persona_out_of_date: false,
+      persona_orphaned: false,
+      last_error_code: agent.last_error_code,
+      sender_policy: agent.respond_to ?? "owner-only",
+      updated_at: agent.updated_at,
+    })),
+    rejected_count: 0,
+  };
+}
+
 function isAgentMemoryListing(
   value: RawAgentMemoryListing | Record<string, RawAgentMemoryListing>,
 ): value is RawAgentMemoryListing {
@@ -12254,6 +12283,8 @@ export function maybeInstallE2eTauriMocks() {
       }
       case "list_managed_agents":
         return handleListManagedAgents(activeConfig);
+      case "list_organization_managed_agents":
+        return handleListOrganizationManagedAgents(activeConfig);
       case "get_agent_memory":
         return handleGetAgentMemory(
           (payload as Parameters<typeof handleGetAgentMemory>[0]) ?? {},
