@@ -13,22 +13,24 @@ Buzz already gives humans and agents a place to work together. Agent Tower adds 
 - Six departments with one manager seat and up to four staff seats each.
 - Department details for responsibilities, capabilities, tools, routines and Buzz relationships.
 - URL-backed department dialogs that survive reloads and work with Back and Forward navigation.
+- A purpose-built Tauri projection of safe managed-agent facts, refreshed through TanStack Query and shown as observed-but-unassigned members.
 - Responsive and screen-reader-aware grouping, without adding a separate web shell.
 
 ![Engineering department details](docs/assets/screenshots/agent-tower-engineering-dialog.png)
 
 ## Preview boundary
 
-This first slice is intentionally read-only and fixture-backed. It does not modify Buzz's relay, Nostr protocol or database, and it does not expose prompts, credentials, logs or private agent state.
+This slice is intentionally read-only. Departments, reporting lines and capability policy remain planning data, while managed-agent names, stable public-key identities and bounded runtime health come from a purpose-built Tauri projection. It does not modify Buzz's relay, Nostr protocol or database.
 
-The next step is a whitelisted local adapter that joins Agent Tower's organization model to safe Buzz identities, teams and presence data through TanStack Query.
+The projection explicitly omits prompts, environment variables, commands, allowlists, relay configuration, paths, logs and raw errors. Records without a canonical public-key identity are withheld and make the view degraded. Observed agents remain unassigned until Agent Tower supplies an owner-reviewed stable member-to-department mapping; Buzz teams are not silently treated as departments.
+
+The next step is to connect the native producer to the shared Agent Tower control-core schemas and persist governed assignments without requiring the compatibility Next.js server.
 
 ## Try it from source
 
 ```bash
 git clone https://github.com/ArchieeR/buzz.git
 cd buzz
-git switch feat/agent-tower-organization
 . ./bin/activate-hermit
 pnpm install --frozen-lockfile
 cd desktop
@@ -47,8 +49,9 @@ pnpm exec playwright test tests/e2e/organization.spec.ts --project=smoke
 
 ## Current verification
 
-- 4,673 desktop unit tests pass.
+- Desktop unit and focused safe-projection tests pass.
 - Three Organization Playwright scenarios pass.
+- The Rust projection test proves secret-bearing managed-agent fields cannot enter the Organization wire payload.
 - TypeScript, Biome/project checks and production builds pass.
 - The hierarchy and department dialog have been checked at desktop and compact desktop widths.
 

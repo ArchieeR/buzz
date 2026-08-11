@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
+import type { BuzzOrganizationAgentFact } from "@/features/organization/organizationFacts";
 import {
   getDepartmentSeats,
   organizationFixture,
@@ -22,6 +23,7 @@ import {
   type OrganizationDepartmentId,
   type OrganizationRole,
 } from "@/features/organization/organizationModel";
+import type { OrganizationFactsState } from "@/features/organization/useOrganizationFactsQuery";
 import { OrganizationDepartmentDialog } from "@/features/organization/ui/OrganizationDepartmentDialog";
 import { topChromeInset } from "@/shared/layout/chromeLayout";
 import { cn } from "@/shared/lib/cn";
@@ -185,9 +187,15 @@ function Connector({ className }: { className?: string }) {
 }
 
 export function OrganizationView({
+  agents,
+  factsState,
+  rejectedCount,
   selectedDepartmentId,
   onSelectDepartment,
 }: {
+  agents: BuzzOrganizationAgentFact[];
+  factsState: OrganizationFactsState;
+  rejectedCount: number;
   selectedDepartmentId?: OrganizationDepartmentId;
   onSelectDepartment: (id?: OrganizationDepartmentId) => void;
 }) {
@@ -218,11 +226,26 @@ export function OrganizationView({
             action={
               <div className="flex items-center gap-3">
                 <span className="hidden text-xs text-muted-foreground sm:inline">
-                  6 departments · 30 planned seats · 0 assigned
+                  6 departments · 30 planned seats · {agents.length} observed ·
+                  0 assigned
+                  {rejectedCount > 0 ? ` · ${rejectedCount} withheld` : null}
                 </span>
                 <Badge className="gap-1.5" variant="outline">
-                  <CircleDot className="h-3 w-3 text-amber-500" />
-                  Planning view
+                  <CircleDot
+                    className={cn(
+                      "h-3 w-3",
+                      factsState === "live"
+                        ? "text-emerald-500"
+                        : factsState === "degraded"
+                          ? "text-destructive"
+                          : "text-amber-500",
+                    )}
+                  />
+                  {factsState === "live"
+                    ? "Buzz live"
+                    : factsState === "degraded"
+                      ? "Buzz degraded"
+                      : "Connecting"}
                 </Badge>
               </div>
             }
@@ -309,7 +332,7 @@ export function OrganizationView({
 
               <section aria-labelledby="organization-services-heading">
                 <Connector className="mt-1" />
-                <div className="mb-2 flex items-center gap-3">
+                <div className="mb-2 flex min-w-0 items-center gap-3">
                   <div className="h-px flex-1 bg-border/70" />
                   <h2
                     className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground"
@@ -318,6 +341,32 @@ export function OrganizationView({
                     <ShieldCheck className="h-3.5 w-3.5" /> Shared services
                   </h2>
                   <div className="h-px flex-1 bg-border/70" />
+                  {agents.length > 0 ? (
+                    <section
+                      aria-labelledby="organization-unassigned-heading"
+                      className="flex min-w-0 items-center gap-2"
+                    >
+                      <h2
+                        className="shrink-0 text-xs font-medium text-muted-foreground"
+                        id="organization-unassigned-heading"
+                      >
+                        Observed, unassigned
+                      </h2>
+                      <div className="flex min-w-0 gap-1.5 overflow-x-auto">
+                        {agents.map((agent) => (
+                          <Badge
+                            className="shrink-0 gap-1.5"
+                            key={agent.id}
+                            title={`${agent.id} · ${agent.status}`}
+                            variant="secondary"
+                          >
+                            <Bot className="h-3 w-3" />
+                            {agent.displayName}
+                          </Badge>
+                        ))}
+                      </div>
+                    </section>
+                  ) : null}
                 </div>
                 <div className="mx-auto grid max-w-3xl gap-3 pt-2 md:grid-cols-2">
                   {services.map((department) => (
