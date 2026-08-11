@@ -1,15 +1,7 @@
 import { isThreadReply } from "@/features/messages/lib/threading";
 import type { DesktopNotificationTarget } from "@/features/notifications/lib/desktop";
 import type { SearchHit } from "@/shared/api/types";
-
-export type AppView =
-  | "home"
-  | "channel"
-  | "messages"
-  | "agents"
-  | "workflows"
-  | "pulse"
-  | "projects";
+import type { AppView } from "@/shared/navigation/appView";
 
 const WINDOW_DRAG_HANDLE_HEIGHT = 44;
 const TAURI_DRAG_REGION_ATTR = "data-tauri-drag-region";
@@ -157,6 +149,13 @@ export function deriveShellRoute(pathname: string): {
     return {
       selectedChannelId: null,
       selectedView: "messages",
+    };
+  }
+
+  if (pathname === "/organization") {
+    return {
+      selectedChannelId: null,
+      selectedView: "organization",
     };
   }
 
