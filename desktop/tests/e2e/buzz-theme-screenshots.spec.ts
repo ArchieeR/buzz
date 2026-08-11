@@ -63,9 +63,7 @@ async function expectBuzzSidebarPalette(page: Page, mode: "light" | "dark") {
   const rowHoverSurface =
     mode === "light" ? "rgba(0, 0, 0, 0.04)" : "rgba(255, 255, 255, 0.04)";
   const activeSurface =
-    mode === "light"
-      ? "rgba(255, 255, 255, 0.82)"
-      : "rgba(255, 255, 255, 0.18)";
+    mode === "light" ? "rgba(0, 0, 0, 0.07)" : "rgba(255, 255, 255, 0.16)";
   const chromeColor =
     mode === "light" ? "rgba(0, 0, 0, 0.5)" : "rgba(255, 255, 255, 0.5)";
   const search = page.getByTestId("open-search");
