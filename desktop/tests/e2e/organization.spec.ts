@@ -3,7 +3,15 @@ import { expect, test } from "@playwright/test";
 import { installMockBridge } from "../helpers/bridge";
 
 test.beforeEach(async ({ page }) => {
-  await installMockBridge(page);
+  await installMockBridge(page, {
+    managedAgents: [
+      {
+        name: "System Manager",
+        pubkey: "1".repeat(64),
+        status: "running",
+      },
+    ],
+  });
 });
 
 test("organization sidebar route opens the chart and preserves department detail in the URL", async ({
@@ -16,6 +24,14 @@ test("organization sidebar route opens the chart and preserves department detail
   await expect(page.getByTestId("organization-view")).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Organization" }),
+  ).toBeVisible();
+  await expect(page.getByText("Buzz live", { exact: true })).toBeVisible();
+  const observedAgents = page.getByRole("region", {
+    name: "Observed, unassigned",
+  });
+  await expect(observedAgents).toBeVisible();
+  await expect(
+    observedAgents.getByText("System Manager", { exact: true }),
   ).toBeVisible();
   await page.screenshot({
     path: testInfo.outputPath("organization-view.png"),
