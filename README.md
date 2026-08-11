@@ -14,6 +14,9 @@
   <a href="LICENSE">Apache 2.0</a>
 </p>
 
+> [!NOTE]
+> **Agent Tower downstream preview:** this fork adds a native Organization map for human and agent teams. [See the screen, scope and local test instructions](AGENT-TOWER.md). This experiment is not an official Block build.
+
 <p align="center">
   <img src="docs/assets/screenshots/channel-thread.png" alt="A Buzz project channel where people and an agent coordinate on a release plan" width="100%">
 </p>
