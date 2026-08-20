@@ -369,6 +369,17 @@ mod tests {
     }
 
     #[test]
+    fn export_matches_the_checked_in_cross_client_fixture() {
+        let value = serde_json::to_value(export_organization_facts(safe_facts(0)))
+            .expect("export should serialize");
+        let fixture: serde_json::Value = serde_json::from_str(include_str!(
+            "../../tests/fixtures/organization-export-v1.json"
+        ))
+        .expect("fixture should parse");
+        assert_eq!(value, fixture);
+    }
+
+    #[test]
     fn export_drops_non_portable_runtime_values() {
         for runtime in [
             "/usr/local/bin/goose",
