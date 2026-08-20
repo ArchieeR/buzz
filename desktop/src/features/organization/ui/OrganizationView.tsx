@@ -4,6 +4,7 @@ import {
   BriefcaseBusiness,
   CircleDot,
   Database,
+  Download,
   Megaphone,
   MessageSquareMore,
   Network,
@@ -13,6 +14,7 @@ import {
   Wrench,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import * as React from "react";
 
 import type {
   BuzzOrganizationAgentFact,
@@ -30,6 +32,7 @@ import {
 } from "@/features/organization/organizationModel";
 import type { OrganizationSourceState } from "@/features/organization/useOrganizationFactsQuery";
 import { OrganizationDepartmentDialog } from "@/features/organization/ui/OrganizationDepartmentDialog";
+import { OrganizationExportDialog } from "@/features/organization/ui/OrganizationExportDialog";
 import { topChromeInset } from "@/shared/layout/chromeLayout";
 import { cn } from "@/shared/lib/cn";
 import { Badge } from "@/shared/ui/badge";
@@ -220,7 +223,9 @@ export function OrganizationView({
   agents,
   channels,
   hasStaleData,
+  observedAt,
   onRetry,
+  sourceRevision,
   sourceState,
   warnings,
   buzzTeams,
@@ -230,13 +235,16 @@ export function OrganizationView({
   agents: BuzzOrganizationAgentFact[];
   channels: BuzzOrganizationChannelFact[];
   hasStaleData: boolean;
+  observedAt?: string;
   onRetry: () => void;
+  sourceRevision?: string;
   sourceState: OrganizationSourceState;
   warnings: string[];
   buzzTeams: BuzzOrganizationTeamFact[];
   selectedDepartmentId?: OrganizationDepartmentId;
   onSelectDepartment: (id?: OrganizationDepartmentId) => void;
 }) {
+  const [exportOpen, setExportOpen] = React.useState(false);
   const leadership = organizationFixture.departments.find(
     (department) => department.kind === "leadership",
   );
@@ -297,6 +305,16 @@ export function OrganizationView({
                     </span>
                   ) : null}
                 </span>
+                <button
+                  className="inline-flex h-7 items-center gap-1.5 rounded-md border border-border px-2.5 text-xs font-medium hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                  data-testid="organization-export-open"
+                  disabled={!sourceRevision || !observedAt}
+                  onClick={() => setExportOpen(true)}
+                  type="button"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Export safe organization snapshot…
+                </button>
                 {sourceState === "disconnected" ? (
                   <button
                     aria-label="Buzz disconnected. Agent facts are unavailable; the planning chart remains visible. Retry now."
@@ -533,6 +551,12 @@ export function OrganizationView({
         </main>
       </div>
 
+      <OrganizationExportDialog
+        observedAt={observedAt}
+        onOpenChange={setExportOpen}
+        open={exportOpen}
+        sourceRevision={sourceRevision}
+      />
       <OrganizationDepartmentDialog
         agents={agents}
         channels={channels}

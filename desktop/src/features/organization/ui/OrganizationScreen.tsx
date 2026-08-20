@@ -17,7 +17,9 @@ export function OrganizationScreen({
         agents={organizationFacts.agents}
         channels={organizationFacts.channels}
         hasStaleData={organizationFacts.hasStaleData}
+        observedAt={organizationFacts.observedAt}
         onRetry={() => void organizationFacts.refetch()}
+        sourceRevision={organizationFacts.sourceRevision}
         sourceState={organizationFacts.sourceState}
         warnings={organizationFacts.warnings}
         onSelectDepartment={onSelectDepartment}

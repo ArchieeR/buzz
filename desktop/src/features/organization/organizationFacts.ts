@@ -308,3 +308,16 @@ export async function getOrganizationFacts(): Promise<BuzzOrganizationFacts> {
   const response = await invokeTauri<unknown>("get_organization_facts");
   return normalizeOrganizationFacts(response);
 }
+
+export type OrganizationExportSaveResult = {
+  saved: boolean;
+  destination?: string;
+  sourceRevision: string;
+  observedAt: string;
+};
+
+export async function exportSafeOrganizationSnapshot(): Promise<OrganizationExportSaveResult> {
+  return invokeTauri<OrganizationExportSaveResult>(
+    "export_safe_organization_snapshot",
+  );
+}

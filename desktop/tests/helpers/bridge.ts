@@ -221,6 +221,10 @@ type MockBridgeOptions = {
   managedAgents?: MockManagedAgentSeed[];
   /** Reject successive Organization fact reads, then resume. */
   organizationFactsErrors?: (string | null)[];
+  /** Results for successive safe Organization export attempts. */
+  organizationExportResults?: Array<
+    { saved: false } | { saved: true; destination?: string } | { error: string }
+  >;
   organizationChannels?: Array<{
     id: string;
     name: string;

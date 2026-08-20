@@ -20,6 +20,16 @@ pub struct OrganizationExport {
     facts: OrganizationExportFacts,
 }
 
+/// Outcome of an owner-selected safe organization export.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OrganizationExportSaveResult {
+    saved: bool,
+    destination: Option<String>,
+    source_revision: String,
+    observed_at: String,
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct OrganizationExportFacts {
@@ -239,6 +249,38 @@ pub async fn get_organization_export(
     Ok(export_organization_facts(
         get_organization_facts(app, state).await?,
     ))
+}
+
+/// Save the exact safe organization envelope to an owner-selected JSON file.
+/// The command never reads a private store, copies to the clipboard, or uploads
+/// the snapshot. Cancelling the native dialog is a successful no-op.
+#[tauri::command]
+pub async fn export_safe_organization_snapshot(
+    app: AppHandle,
+    state: tauri::State<'_, AppState>,
+) -> Result<OrganizationExportSaveResult, String> {
+    let export = export_organization_facts(get_organization_facts(app.clone(), state).await?);
+    let source_revision = export.facts.source_revision.clone();
+    let observed_at = export.facts.observed_at.clone();
+    let mut bytes = serde_json::to_vec_pretty(&export)
+        .map_err(|error| format!("Could not serialize safe organization snapshot: {error}"))?;
+    bytes.push(b'\n');
+
+    let destination = super::export_util::save_restricted_bytes_with_dialog(
+        &app,
+        "buzz-organization-snapshot.json",
+        "JSON document",
+        &["json"],
+        &bytes,
+    )
+    .await?;
+
+    Ok(OrganizationExportSaveResult {
+        saved: destination.is_some(),
+        destination: destination.map(|path| path.display().to_string()),
+        source_revision,
+        observed_at,
+    })
 }
 
 #[cfg(test)]

@@ -268,6 +268,12 @@ type E2eConfig = {
     managedAgents?: MockManagedAgentSeed[];
     /** Reject successive Organization fact reads, then resume. */
     organizationFactsErrors?: (string | null)[];
+    /** Results for successive safe Organization export attempts. */
+    organizationExportResults?: Array<
+      | { saved: false }
+      | { saved: true; destination?: string }
+      | { error: string }
+    >;
     organizationChannels?: Array<{
       id: string;
       name: string;
@@ -12385,6 +12391,23 @@ export function maybeInstallE2eTauriMocks() {
         return handleListOrganizationManagedAgents(activeConfig);
       case "get_organization_facts":
         return handleGetOrganizationFacts(activeConfig);
+      case "export_safe_organization_snapshot": {
+        const result =
+          activeConfig?.mock?.organizationExportResults?.shift() ?? {
+            saved: true as const,
+            destination: "/tmp/buzz-organization-snapshot.json",
+          };
+        if ("error" in result) throw new Error(result.error);
+        const facts = await handleGetOrganizationFacts(activeConfig);
+        return {
+          saved: result.saved,
+          destination: result.saved
+            ? (result.destination ?? "/tmp/buzz-organization-snapshot.json")
+            : null,
+          sourceRevision: facts.source_revision,
+          observedAt: facts.observed_at,
+        };
+      }
       case "get_agent_memory":
         return handleGetAgentMemory(
           (payload as Parameters<typeof handleGetAgentMemory>[0]) ?? {},

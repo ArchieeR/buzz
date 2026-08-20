@@ -95,9 +95,9 @@ test("organization sidebar route opens the chart and preserves department detail
   await page.getByTestId("open-organization-view").click();
   await expect(page).toHaveURL(/#\/organization$/);
   await expect(page.getByTestId("organization-view")).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Organization" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Organization" })).toHaveText(
+    "Organization",
+  );
   await expect(page.getByText("Buzz live", { exact: true })).toBeVisible();
   await expect(
     page.getByText("· 1 identity excluded", { exact: true }),
@@ -199,6 +199,53 @@ test("organization sidebar route opens the chart and preserves department detail
   await page.getByTestId("global-back").click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
   await expect(page).toHaveURL(/#\/organization$/);
+});
+
+test("organization exports only after owner destination selection and reports errors", async ({
+  page,
+}, testInfo) => {
+  await installMockBridge(page, {
+    organizationExportResults: [
+      { saved: false },
+      {
+        saved: true,
+        destination: "/tmp/buzz-organization-snapshot.json",
+      },
+      { error: "mock destination unavailable" },
+    ],
+  });
+  await page.goto("/#/organization");
+
+  await page.getByTestId("organization-export-open").click();
+  const dialog = page.getByTestId("organization-export-dialog");
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("Secret-free organization snapshot");
+  await expect(dialog).toContainText("Private channel names");
+  await expect(dialog).toContainText("organization-sensitive");
+  await expect(dialog).toContainText("Keys and auth tags");
+  await expect(dialog).toContainText("Agent Tower policy or knowledge");
+  await expect(dialog).not.toContainText(SYSTEM_MANAGER_PUBKEY);
+  await waitForAnimations(page);
+  await dialog.screenshot({
+    path: testInfo.outputPath("organization-safe-export-dialog.png"),
+  });
+
+  const confirm = dialog.getByTestId("organization-export-confirm");
+  await confirm.click();
+  await expect(dialog.getByTestId("organization-export-success")).toHaveCount(
+    0,
+  );
+  await expect(dialog.getByTestId("organization-export-error")).toHaveCount(0);
+
+  await confirm.click();
+  await expect(dialog.getByTestId("organization-export-success")).toContainText(
+    "/tmp/buzz-organization-snapshot.json",
+  );
+
+  await confirm.click();
+  await expect(dialog.getByTestId("organization-export-error")).toContainText(
+    "mock destination unavailable",
+  );
 });
 
 test("organization counsel stays clear of the CEO at compact desktop widths", async ({
