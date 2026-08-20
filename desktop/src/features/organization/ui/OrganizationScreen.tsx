@@ -15,12 +15,14 @@ export function OrganizationScreen({
     <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <OrganizationView
         agents={organizationFacts.agents}
+        channels={organizationFacts.channels}
         hasStaleData={organizationFacts.hasStaleData}
         onRetry={() => void organizationFacts.refetch()}
         sourceState={organizationFacts.sourceState}
         warnings={organizationFacts.warnings}
         onSelectDepartment={onSelectDepartment}
         selectedDepartmentId={selectedDepartmentId}
+        buzzTeams={organizationFacts.teams}
       />
     </div>
   );

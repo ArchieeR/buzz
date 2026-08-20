@@ -266,6 +266,20 @@ pub fn load_managed_agents(app: &AppHandle) -> Result<Vec<ManagedAgentRecord>, S
     Ok(records)
 }
 
+/// Load managed-agent records for read-only public projections without
+/// consulting or migrating the OS keyring. Any legacy inline key is cleared
+/// immediately and must never reach the projection caller.
+pub(crate) fn load_managed_agents_public(
+    app: &AppHandle,
+) -> Result<Vec<ManagedAgentRecord>, String> {
+    let mut records = load_agent_store(app)?;
+    records.retain(|record| !record.pubkey.is_empty());
+    for record in &mut records {
+        record.private_key_nsec.clear();
+    }
+    Ok(records)
+}
+
 /// Load the key-less agent *definitions* (former personas) from the unified
 /// store. The persona compatibility shim (`load_personas`) presents these in
 /// the legacy shape via `to_definition_view`.

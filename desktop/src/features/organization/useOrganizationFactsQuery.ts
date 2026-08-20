@@ -1,12 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 
 import {
-  listOrganizationManagedAgents,
+  getOrganizationFacts,
   type BuzzOrganizationAgentFact,
 } from "@/features/organization/organizationFacts";
+import { useFocusedRefetchInterval } from "@/shared/lib/useDocumentVisible";
 
 export const organizationManagedAgentsQueryKey = [
-  "organization-managed-agents",
+  "organization-facts",
 ] as const;
 
 export type OrganizationSourceState = "connecting" | "live" | "disconnected";
@@ -51,11 +52,13 @@ export function getOrganizationFactWarnings({
 }
 
 export function useOrganizationFactsQuery() {
+  const refetchInterval = useFocusedRefetchInterval(30_000);
   const query = useQuery({
     queryKey: organizationManagedAgentsQueryKey,
-    queryFn: listOrganizationManagedAgents,
-    staleTime: 5_000,
-    refetchInterval: 5_000,
+    queryFn: getOrganizationFacts,
+    staleTime: 30_000,
+    refetchInterval,
+    refetchOnWindowFocus: true,
     retry: false,
   });
   const agents = query.data?.agents ?? [];
@@ -65,6 +68,10 @@ export function useOrganizationFactsQuery() {
   return {
     ...query,
     agents,
+    teams: query.data?.teams ?? [],
+    channels: query.data?.channels ?? [],
+    sourceRevision: query.data?.sourceRevision,
+    observedAt: query.data?.observedAt,
     rejectedCount,
     sourceState: getOrganizationSourceState({
       isError: query.isError,

@@ -84,6 +84,7 @@ export type MockManagedAgentSeed = {
   name: string;
   avatarUrl?: string | null;
   personaId?: string | null;
+  teamId?: string | null;
   /** Harness/runtime id pin; `null` = inherit from persona (native default). */
   runtime?: string | null;
   status?: RawManagedAgent["status"];
@@ -267,6 +268,16 @@ type E2eConfig = {
     managedAgents?: MockManagedAgentSeed[];
     /** Reject successive Organization fact reads, then resume. */
     organizationFactsErrors?: (string | null)[];
+    organizationChannels?: Array<{
+      id: string;
+      name: string;
+      channelType: "stream" | "forum" | "dm";
+      visibility: "open" | "private";
+      description?: string;
+      topic?: string;
+      purpose?: string;
+      memberPubkeys: string[];
+    }>;
     /** Result returned by the mocked `add_agent_to_huddle` command. */
     addAgentToHuddleResult?: {
       ephemeral_added: boolean;
@@ -7859,7 +7870,10 @@ async function handleListOrganizationManagedAgents(
       pubkey,
       display_name: agent.name,
       persona_id: agent.persona_id,
-      team_id: null,
+      team_id:
+        config?.mock?.managedAgents?.find(
+          (seed) => seed.pubkey.toLowerCase() === pubkey,
+        )?.teamId ?? null,
       runtime: agent.runtime,
       status: agent.status,
       backend: agent.backend.type === "provider" ? "provider" : "local",
@@ -7875,6 +7889,66 @@ async function handleListOrganizationManagedAgents(
       updated_at: agent.updated_at,
     })),
     rejected_count: rejectedCount,
+  };
+}
+
+async function handleGetOrganizationFacts(config: E2eConfig | undefined) {
+  const agents = await handleListOrganizationManagedAgents(config);
+  const teams = await handleListTeams();
+  const channels = await handleGetChannels(config);
+  const safeTeams = teams.map((team) => ({
+    id: team.id,
+    name: team.name,
+    description: team.description,
+    persona_ids: [...team.persona_ids],
+    is_builtin: team.is_builtin,
+    updated_at: team.updated_at,
+  }));
+  const safeChannels = channels.map((channel) => ({
+    id: channel.id,
+    name: channel.name,
+    channel_type: channel.channel_type,
+    visibility: channel.visibility,
+    description: channel.description,
+    topic: channel.topic,
+    purpose: channel.purpose,
+    member_count: channel.member_count,
+    member_pubkeys: [
+      ...("member_pubkeys" in channel
+        ? channel.member_pubkeys
+        : channel.participant_pubkeys),
+    ].filter((pubkey) => typeof pubkey === "string"),
+    last_message_at: channel.last_message_at,
+    archived_at: channel.archived_at,
+  }));
+  for (const channel of config?.mock?.organizationChannels ?? []) {
+    safeChannels.push({
+      id: channel.id,
+      name: channel.name,
+      channel_type: channel.channelType,
+      visibility: channel.visibility,
+      description: channel.description ?? "",
+      topic: channel.topic ?? null,
+      purpose: channel.purpose ?? null,
+      member_count: channel.memberPubkeys.length,
+      member_pubkeys: [...channel.memberPubkeys],
+      last_message_at: null,
+      archived_at: null,
+    });
+  }
+  const sourceRevision = JSON.stringify({
+    agents,
+    teams: safeTeams,
+    channels: safeChannels,
+  });
+
+  return {
+    schema_version: 1,
+    source_revision: sourceRevision || "empty",
+    observed_at: new Date().toISOString(),
+    agents,
+    teams: safeTeams,
+    channels: safeChannels,
   };
 }
 
@@ -12309,6 +12383,8 @@ export function maybeInstallE2eTauriMocks() {
         return handleListManagedAgents(activeConfig);
       case "list_organization_managed_agents":
         return handleListOrganizationManagedAgents(activeConfig);
+      case "get_organization_facts":
+        return handleGetOrganizationFacts(activeConfig);
       case "get_agent_memory":
         return handleGetAgentMemory(
           (payload as Parameters<typeof handleGetAgentMemory>[0]) ?? {},

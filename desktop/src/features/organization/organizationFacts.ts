@@ -26,6 +26,39 @@ export type BuzzOrganizationManagedAgentFacts = {
   rejectedCount: number;
 };
 
+export type BuzzOrganizationTeamFact = {
+  id: `buzz-team:${string}`;
+  name: string;
+  description?: string;
+  personaIds: string[];
+  isBuiltin: boolean;
+  updatedAt?: string;
+};
+
+export type BuzzOrganizationChannelFact = {
+  id: `buzz-channel:${string}`;
+  name: string;
+  channelType: string;
+  visibility: "open" | "private" | "unknown";
+  description?: string;
+  topic?: string;
+  purpose?: string;
+  memberCount: number;
+  memberPubkeys: string[];
+  lastMessageAt?: string;
+  archivedAt?: string;
+};
+
+export type BuzzOrganizationFacts = {
+  schemaVersion: 1;
+  sourceRevision: string;
+  observedAt: string;
+  agents: BuzzOrganizationAgentFact[];
+  rejectedCount: number;
+  teams: BuzzOrganizationTeamFact[];
+  channels: BuzzOrganizationChannelFact[];
+};
+
 type RawOrganizationManagedAgentFact = {
   id?: unknown;
   pubkey?: unknown;
@@ -167,9 +200,111 @@ export function normalizeOrganizationManagedAgentFacts(
   };
 }
 
+function normalizeOrganizationTeamFact(
+  value: unknown,
+): BuzzOrganizationTeamFact {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error("Organization team fact must be an object.");
+  }
+  const raw = value as Record<string, unknown>;
+  const id = requiredString(raw.id, "team id");
+  const personaIds = raw.persona_ids;
+  if (
+    !Array.isArray(personaIds) ||
+    personaIds.some((item) => typeof item !== "string")
+  ) {
+    throw new Error("Organization team fact requires persona_ids.");
+  }
+  return {
+    id: `buzz-team:${id}`,
+    name: requiredString(raw.name, "team name"),
+    description: optionalString(raw.description),
+    personaIds: personaIds.map((item) => item.trim()).filter(Boolean),
+    isBuiltin: raw.is_builtin === true,
+    updatedAt: optionalString(raw.updated_at),
+  };
+}
+
+function normalizeOrganizationChannelFact(
+  value: unknown,
+): BuzzOrganizationChannelFact {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error("Organization channel fact must be an object.");
+  }
+  const raw = value as Record<string, unknown>;
+  const id = requiredString(raw.id, "channel id");
+
+  const memberPubkeys = raw.member_pubkeys;
+  if (
+    !Array.isArray(memberPubkeys) ||
+    memberPubkeys.some((item) => typeof item !== "string")
+  ) {
+    throw new Error("Organization channel fact requires member_pubkeys.");
+  }
+  const memberCount = raw.member_count;
+  if (
+    typeof memberCount !== "number" ||
+    !Number.isInteger(memberCount) ||
+    memberCount < 0
+  ) {
+    throw new Error(
+      "Organization channel fact requires non-negative member_count.",
+    );
+  }
+  return {
+    id: `buzz-channel:${id.toLowerCase()}`,
+    name: requiredString(raw.name, "channel name"),
+    channelType: requiredString(raw.channel_type, "channel_type"),
+    visibility:
+      raw.visibility === "open" || raw.visibility === "private"
+        ? raw.visibility
+        : "unknown",
+    description: optionalString(raw.description),
+    topic: optionalString(raw.topic),
+    purpose: optionalString(raw.purpose),
+    memberCount,
+    memberPubkeys: memberPubkeys.map((item) => item.toLowerCase()),
+    lastMessageAt: optionalString(raw.last_message_at),
+    archivedAt: optionalString(raw.archived_at),
+  };
+}
+
+export function normalizeOrganizationFacts(
+  value: unknown,
+): BuzzOrganizationFacts {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error("Organization facts must be an object.");
+  }
+  const raw = value as Record<string, unknown>;
+  if (
+    raw.schema_version !== 1 ||
+    !Array.isArray(raw.teams) ||
+    !Array.isArray(raw.channels)
+  ) {
+    throw new Error(
+      "Organization facts require schema version 1, teams, and channels.",
+    );
+  }
+  const agents = normalizeOrganizationManagedAgentFacts(raw.agents);
+  return {
+    schemaVersion: 1,
+    sourceRevision: requiredString(raw.source_revision, "source_revision"),
+    observedAt: requiredString(raw.observed_at, "observed_at"),
+    agents: agents.agents,
+    rejectedCount: agents.rejectedCount,
+    teams: raw.teams.map(normalizeOrganizationTeamFact),
+    channels: raw.channels.map(normalizeOrganizationChannelFact),
+  };
+}
+
 export async function listOrganizationManagedAgents(): Promise<BuzzOrganizationManagedAgentFacts> {
   const response = await invokeTauri<unknown>(
     "list_organization_managed_agents",
   );
   return normalizeOrganizationManagedAgentFacts(response);
+}
+
+export async function getOrganizationFacts(): Promise<BuzzOrganizationFacts> {
+  const response = await invokeTauri<unknown>("get_organization_facts");
+  return normalizeOrganizationFacts(response);
 }

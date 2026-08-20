@@ -10,8 +10,15 @@ import {
 
 import {
   getDepartmentSeats,
+  getOrganizationRoleTitle,
+  resolveOrganizationMemberAssignments,
   type OrganizationDepartment,
 } from "@/features/organization/organizationModel";
+import type { BuzzOrganizationAgentFact } from "@/features/organization/organizationFacts";
+import type {
+  BuzzOrganizationChannelFact,
+  BuzzOrganizationTeamFact,
+} from "@/features/organization/organizationFacts";
 import { Badge } from "@/shared/ui/badge";
 import {
   Dialog,
@@ -22,19 +29,50 @@ import {
 } from "@/shared/ui/dialog";
 
 export function OrganizationDepartmentDialog({
+  agents,
+  channels,
   department,
   onOpenChange,
+  teams,
 }: {
+  agents: BuzzOrganizationAgentFact[];
+  channels: BuzzOrganizationChannelFact[];
   department: OrganizationDepartment | null;
   onOpenChange: (open: boolean) => void;
+  teams: BuzzOrganizationTeamFact[];
 }) {
-  const seats = department ? getDepartmentSeats(department) : [];
+  const seats = department ? getDepartmentSeats(department, agents) : [];
+  const linkedSeats = seats.filter((seat) => seat.state !== "planned");
+  const managerSeat = department
+    ? seats.find((seat) => seat.id === department.managerRoleId)
+    : undefined;
+  const assignedAgents = department
+    ? resolveOrganizationMemberAssignments(agents).assignments.flatMap(
+        ({ agent, binding }) =>
+          agent && binding.departmentId === department.id ? [agent] : [],
+      )
+    : [];
+  const assignedFacts = assignedAgents.flatMap((agent) => {
+    const fact = agents.find((candidate) => candidate.id === agent.id);
+    return fact ? [fact] : [];
+  });
+  const assignedPubkeys = new Set(assignedFacts.map((agent) => agent.pubkey));
+  const assignedTeamIds = new Set(
+    assignedFacts.flatMap((agent) =>
+      agent.teamId ? [`buzz-team:${agent.teamId}`] : [],
+    ),
+  );
+  const departmentTeams = teams.filter((team) => assignedTeamIds.has(team.id));
+  const departmentChannels = channels.filter((channel) =>
+    channel.memberPubkeys.some((pubkey) => assignedPubkeys.has(pubkey)),
+  );
 
   return (
     <Dialog open={department !== null} onOpenChange={onOpenChange}>
       <DialogContent
         className="max-h-[calc(100vh-3rem)] max-w-5xl grid-rows-[auto_minmax(0,1fr)] overflow-hidden p-0"
         closeButtonClassName="h-11 w-11"
+        data-testid="organization-department-dialog"
         style={{ backgroundColor: "hsl(var(--background))" }}
       >
         {department ? (
@@ -67,13 +105,14 @@ export function OrganizationDepartmentDialog({
                     </p>
                   </div>
                   <Badge variant="secondary">
-                    0 / {department.capacity} assigned
+                    {linkedSeats.length} / {department.capacity} role linked
                   </Badge>
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
                   {seats.map((seat) => (
                     <article
                       className="min-h-28 rounded-xl border border-border/70 bg-muted/20 p-3"
+                      data-testid={`organization-seat-${seat.id}`}
                       key={seat.id}
                       style={{
                         borderTopColor: department.accent,
@@ -94,7 +133,23 @@ export function OrganizationDepartmentDialog({
                         {seat.role}
                       </p>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        {seat.kind === "manager" ? "Manager seat" : "Open role"}
+                        {seat.memberName
+                          ? `${seat.memberName} · ${seat.runtimeStatus ?? "observed"}`
+                          : seat.state === "configured"
+                            ? "Configured identity not currently observed"
+                            : seat.kind === "manager"
+                              ? "Planned manager seat"
+                              : "Planned role"}
+                      </p>
+                      {seat.placement === "department-assignment-pending" ? (
+                        <Badge className="mt-2" variant="outline">
+                          Placement pending
+                        </Badge>
+                      ) : null}
+                      <p className="mt-2 text-2xs text-muted-foreground">
+                        Reports to{" "}
+                        {getOrganizationRoleTitle(seat.reportsToRoleId) ??
+                          seat.reportsToRoleId}
                       </p>
                     </article>
                   ))}
@@ -152,18 +207,62 @@ export function OrganizationDepartmentDialog({
                 </div>
                 <dl className="space-y-3 text-sm">
                   <div className="flex items-center justify-between gap-4 border-t border-border/60 pt-3">
+                    <dt className="text-muted-foreground">Authority</dt>
+                    <dd>Agent Tower</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 border-t border-border/60 pt-3">
+                    <dt className="text-muted-foreground">Reports to</dt>
+                    <dd>
+                      {getOrganizationRoleTitle(department.reportsToRoleId) ??
+                        department.reportsToRoleId}
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 border-t border-border/60 pt-3">
+                    <dt className="text-muted-foreground">Manager</dt>
+                    <dd>
+                      {managerSeat?.role ?? "Unresolved"} ·{" "}
+                      {managerSeat?.state ?? "planned"}
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 border-t border-border/60 pt-3">
                     <dt className="text-muted-foreground">Target</dt>
                     <dd>{department.buzzMapping}</dd>
                   </div>
                   <div className="flex items-center justify-between gap-4 border-t border-border/60 pt-3">
                     <dt className="text-muted-foreground">Mapping</dt>
-                    <dd>Pending</dd>
+                    <dd>
+                      {departmentChannels.length} channel
+                      {departmentChannels.length === 1 ? "" : "s"} ·{" "}
+                      {departmentTeams.length} team
+                      {departmentTeams.length === 1 ? "" : "s"}
+                    </dd>
                   </div>
                   <div className="flex items-center justify-between gap-4 border-t border-border/60 pt-3">
                     <dt className="text-muted-foreground">Writes</dt>
                     <dd>Owner reviewed</dd>
                   </div>
                 </dl>
+                {departmentChannels.length > 0 ? (
+                  <div
+                    className="mt-4 space-y-2"
+                    data-testid="organization-live-channels"
+                  >
+                    {departmentChannels.map((channel) => (
+                      <div
+                        className="rounded-lg border border-border/60 bg-background/50 p-3"
+                        key={channel.id}
+                      >
+                        <p className="text-sm font-medium">#{channel.name}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {channel.topic ??
+                            channel.purpose ??
+                            channel.description ??
+                            "No topic"}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
               </aside>
             </div>
           </>

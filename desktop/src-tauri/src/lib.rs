@@ -764,6 +764,8 @@ pub fn run() {
             list_relay_agents,
             list_managed_agents,
             list_organization_managed_agents,
+            get_organization_facts,
+            get_organization_export,
             list_managed_agent_runtimes,
             start_managed_agent_runtime,
             stop_managed_agent_runtime,
@@ -925,10 +927,8 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
     let shutdown_done = Arc::new(AtomicBool::new(false));
-
     #[cfg(unix)]
     shutdown::install_signal_handler(app.handle().clone(), Arc::clone(&shutdown_done));
-
     let run_shutdown_done = Arc::clone(&shutdown_done);
     let restart_requested = Arc::new(AtomicBool::new(false));
     app.run(move |app_handle, event| match event {

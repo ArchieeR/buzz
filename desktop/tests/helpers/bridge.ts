@@ -221,6 +221,16 @@ type MockBridgeOptions = {
   managedAgents?: MockManagedAgentSeed[];
   /** Reject successive Organization fact reads, then resume. */
   organizationFactsErrors?: (string | null)[];
+  organizationChannels?: Array<{
+    id: string;
+    name: string;
+    channelType: "stream" | "forum" | "dm";
+    visibility: "open" | "private";
+    description?: string;
+    topic?: string;
+    purpose?: string;
+    memberPubkeys: string[];
+  }>;
   /** Result returned by the mocked `add_agent_to_huddle` command. */
   addAgentToHuddleResult?: {
     ephemeral_added: boolean;
